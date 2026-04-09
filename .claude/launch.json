@@ -1,0 +1,25 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Backend (FastAPI)",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "uvicorn", "backend.main:app", "--reload"],
+      "port": 8000
+    },
+    {
+      "name": "Driver App (Kivy)",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["driver_app/app.py"],
+      "port": null,
+      "autoPort": true
+    },
+    {
+      "name": "Passenger App (Kivy)",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["passenger_app/app.py"],
+      "port": null,
+      "autoPort": true
+    }
+  ]
+}

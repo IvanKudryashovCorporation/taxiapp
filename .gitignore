@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# Buildozer
+.buildozer/
+bin/
+*.apk
+*.aab
+
+# Kivy
+.kivy/
+
+# Среды
+.env
+.venv
+venv/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Временный main.py (создаётся build_android.sh)
+/main.py
+cache/
