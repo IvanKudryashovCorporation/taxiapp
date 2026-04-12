@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import sys
 from pathlib import Path
@@ -40,11 +40,8 @@ from kivy.properties import StringProperty
 from driver_app.services.auth import InviteCodeRegistry
 from driver_app.services.backend import ping_driver
 from driver_app.ui.fonts import prepare_fonts
-from driver_app.ui.map_panel import MapPanel  # noqa: F401
+import driver_app.ui  # noqa: F401 — registers all KV widget/screen classes
 from driver_app.ui.root import DriverRoot
-from driver_app.ui.screens.dashboard import DashboardScreen  # noqa: F401
-from driver_app.ui.screens.login import LoginScreen  # noqa: F401
-from driver_app.ui.widgets import NavButton, OrderTile, PanelCard, PriceBubble, TaxiStripe  # noqa: F401
 
 
 class DriverMobileApp(App):

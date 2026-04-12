@@ -1,6 +1,156 @@
 #:import dp kivy.metrics.dp
 #:import NoTransition kivy.uix.screenmanager.NoTransition
 
+<ChatPanel>:
+    orientation: "vertical"
+
+    canvas.before:
+        Color:
+            rgba: 0.93, 0.95, 0.98, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    ScrollView:
+        id: chat_scroll
+        do_scroll_x: False
+        bar_width: dp(3)
+        bar_color: 0.75, 0.81, 0.90, 1
+        bar_inactive_color: 0.75, 0.81, 0.90, 0.4
+
+        BoxLayout:
+            id: messages_list
+            orientation: "vertical"
+            size_hint_y: None
+            height: self.minimum_height
+            padding: dp(12), dp(10)
+            spacing: dp(6)
+
+    Widget:
+        size_hint_y: None
+        height: dp(1)
+        canvas:
+            Color:
+                rgba: 0.86, 0.89, 0.94, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+    Label:
+        text: root.status_text
+        color: 0.43, 0.51, 0.63, 1
+        font_name: app.font_regular
+        font_size: "12sp"
+        text_size: self.width - dp(20), None
+        halign: "left"
+        valign: "middle"
+        size_hint_y: None
+        height: dp(22)
+        padding: dp(10), 0
+
+    BoxLayout:
+        orientation: "horizontal"
+        size_hint_y: None
+        height: dp(72)
+        padding: dp(10), dp(10)
+        spacing: dp(8)
+        canvas.before:
+            Color:
+                rgba: 1, 1, 1, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        TextInput:
+            id: msg_input
+            hint_text: "Сообщение..."
+            multiline: False
+            input_type: "text"
+            font_name: "Roboto"
+            font_size: "15sp"
+            foreground_color: 0.10, 0.18, 0.32, 1
+            hint_text_color: 0.60, 0.67, 0.76, 1
+            background_normal: ""
+            background_active: ""
+            background_color: 0, 0, 0, 0
+            cursor_color: 0.10, 0.18, 0.32, 1
+            padding: dp(14), dp(13)
+            size_hint_y: None
+            height: dp(48)
+            write_tab: False
+            use_bubble: True
+            on_text_validate: root.send_message()
+            canvas.before:
+                Color:
+                    rgba: 0.86, 0.89, 0.94, 1
+                RoundedRectangle:
+                    pos: self.x - 1, self.y - 1
+                    size: self.width + 2, self.height + 2
+                    radius: [dp(14)]
+                Color:
+                    rgba: 0.95, 0.97, 1, 1
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [dp(14)]
+
+        Button:
+            size_hint: None, None
+            size: dp(42), dp(48)
+            text: "\U0001F44D"
+            font_name: "Roboto"
+            font_size: "18sp"
+            color: 0.10, 0.18, 0.32, 1
+            background_normal: ""
+            background_down: ""
+            background_color: 0, 0, 0, 0
+            on_release: root.add_emoji("\U0001F44D")
+            canvas.before:
+                Color:
+                    rgba: 0.89, 0.93, 0.99, 1
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [dp(12)]
+
+        Button:
+            size_hint: None, None
+            size: dp(42), dp(48)
+            text: "\U0001F695"
+            font_name: "Roboto"
+            font_size: "18sp"
+            color: 0.10, 0.18, 0.32, 1
+            background_normal: ""
+            background_down: ""
+            background_color: 0, 0, 0, 0
+            on_release: root.add_emoji("\U0001F695")
+            canvas.before:
+                Color:
+                    rgba: 0.89, 0.93, 0.99, 1
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [dp(12)]
+
+        Button:
+            size_hint: None, None
+            size: dp(56), dp(48)
+            text: "\u27A4"
+            font_name: app.font_bold
+            font_size: "20sp"
+            color: 1, 1, 1, 1
+            background_normal: ""
+            background_down: ""
+            background_color: 0, 0, 0, 0
+            on_release: root.send_message()
+            canvas.before:
+                Color:
+                    rgba: 0.03, 0.09, 0.22, 1
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [dp(14)]
+
 <PanelCard>:
     orientation: "vertical"
     padding: dp(12)
@@ -150,7 +300,7 @@
         spacing: dp(14)
 
         Label:
-            text: "С Е Р В И С   Д Л Я   В О Д И Т Е Л Е Й"
+            text: "РЎ Р• Р  Р’ Р РЎ   Р” Р› РЇ   Р’ Рћ Р” Р Рў Р• Р› Р• Р™"
             color: 0.25, 0.34, 0.50, 1
             font_name: app.font_bold
             font_size: "21sp"
@@ -356,254 +506,95 @@
 
                 Screen:
                     name: "map"
-                    BoxLayout:
-                        orientation: "vertical"
-                        spacing: dp(7)
-
-                        BoxLayout:
-                            size_hint_y: None
-                            height: dp(32)
-
-                            Label:
-                                text: "Карта"
-                                font_name: app.font_bold
-                                font_size: "17sp"
-                                color: 0.04, 0.10, 0.22, 1
-                                text_size: self.size
-                                halign: "left"
-                                valign: "middle"
-
-                            Label:
-                                text: map_panel.gps_status_text
-                                size_hint_x: None
-                                width: dp(250)
-                                font_name: app.font_regular
-                                font_size: "11sp"
-                                color: 0.70, 0.20, 0.20, 1
-                                text_size: self.size
-                                halign: "center"
-                                valign: "middle"
-                                canvas.before:
-                                    Color:
-                                        rgba: 1, 0.90, 0.90, 1
-                                    RoundedRectangle:
-                                        pos: self.pos
-                                        size: self.size
-                                        radius: [dp(10), dp(10), dp(10), dp(10)]
-
-                        Label:
-                            text: map_panel.city_text
-                            font_name: app.font_regular
-                            font_size: "13sp"
-                            color: 0.39, 0.47, 0.60, 1
-                            text_size: self.size
-                            halign: "left"
-                            valign: "middle"
-                            size_hint_y: None
-                            height: dp(22)
-
-                        Label:
-                            text: "Координаты: " + map_panel.coord_text
-                            font_name: app.font_regular
-                            font_size: "12sp"
-                            color: 0.50, 0.58, 0.69, 1
-                            text_size: self.size
-                            halign: "left"
-                            valign: "middle"
-                            size_hint_y: None
-                            height: dp(20)
-
-                        Label:
-                            text: map_panel.tap_text
-                            font_name: app.font_regular
-                            font_size: "12sp"
-                            color: 0.38, 0.47, 0.60, 1
-                            text_size: self.size
-                            halign: "left"
-                            valign: "middle"
-                            size_hint_y: None
-                            height: dp(20)
-
-                        Label:
-                            text: "Карту можно двигать и масштабировать жестами."
-                            font_name: app.font_regular
-                            font_size: "11sp"
-                            color: 0.56, 0.63, 0.73, 1
-                            text_size: self.size
-                            halign: "left"
-                            valign: "middle"
-                            size_hint_y: None
-                            height: dp(18)
-
-                        PanelCard:
-                            size_hint_y: 1
-                            radius: 14
-                            bg_color: 0.95, 0.96, 0.97, 1
-                            border_color: 0.89, 0.91, 0.94, 1
-                            padding: dp(0)
-
-                            MapPanel:
-                                id: map_panel
-
-                        BoxLayout:
-                            size_hint_y: None
-                            height: dp(44)
-                            spacing: dp(8)
-
-                            Button:
-                                text: "Обновить GPS"
-                                background_normal: ""
-                                background_down: ""
-                                background_color: 0, 0, 0, 0
-                                color: 1, 1, 1, 1
-                                font_name: app.font_bold
-                                font_size: "14sp"
-                                on_release: map_panel.refresh_location()
-                                canvas.before:
-                                    Color:
-                                        rgba: 0.03, 0.09, 0.22, 1
-                                    RoundedRectangle:
-                                        pos: self.pos
-                                        size: self.size
-                                        radius: [dp(12), dp(12), dp(12), dp(12)]
-
-                            Button:
-                                text: "Где я"
-                                background_normal: ""
-                                background_down: ""
-                                background_color: 0, 0, 0, 0
-                                color: 0.03, 0.09, 0.22, 1
-                                font_name: app.font_bold
-                                font_size: "14sp"
-                                on_release: map_panel.center_on_me()
-                                canvas.before:
-                                    Color:
-                                        rgba: 1, 1, 1, 1
-                                    RoundedRectangle:
-                                        pos: self.pos
-                                        size: self.size
-                                        radius: [dp(12), dp(12), dp(12), dp(12)]
-                                    Color:
-                                        rgba: 0.75, 0.81, 0.90, 1
-                                    RoundedRectangle:
-                                        pos: self.x + dp(0.8), self.y + dp(0.8)
-                                        size: self.width - dp(1.6), self.height - dp(1.6)
-                                        radius: [dp(12), dp(12), dp(12), dp(12)]
+                    MapPanel:
+                        id: map_panel
 
                 Screen:
                     name: "chat"
-                    BoxLayout:
-                        orientation: "vertical"
-                        spacing: dp(8)
+                    ScreenManager:
+                        id: chat_nav
+                        transition: NoTransition()
 
-                        Label:
-                            text: "Связь"
-                            font_name: app.font_bold
-                            font_size: "17sp"
-                            color: 0.04, 0.10, 0.22, 1
-                            text_size: self.size
-                            halign: "left"
-                            valign: "middle"
-                            size_hint_y: None
-                            height: dp(26)
+                        Screen:
+                            name: "contacts"
+                            BoxLayout:
+                                orientation: "vertical"
+                                spacing: dp(12)
+                                padding: dp(4), dp(4)
+                                Button:
+                                    size_hint_y: None
+                                    height: dp(80)
+                                    markup: True
+                                    text: "[font=Roboto][size=24]\U0001F4DE[/size]  [b]Оператор[/b]\n[size=13]Чат с администратором[/size][/font]"
+                                    font_name: "Roboto"
+                                    text_size: self.width - dp(24), self.height
+                                    halign: "left"
+                                    valign: "middle"
+                                    color: 0.06, 0.12, 0.24, 1
+                                    padding: dp(14), 0
+                                    background_normal: ""
+                                    background_down: ""
+                                    background_color: 0, 0, 0, 0
+                                    on_release: root.open_chat("operator")
+                                    canvas.before:
+                                        Color:
+                                            rgba: 0.86, 0.89, 0.94, 1
+                                        RoundedRectangle:
+                                            pos: self.pos
+                                            size: self.size
+                                            radius: [dp(14)]
+                                        Color:
+                                            rgba: 1, 1, 1, 1
+                                        RoundedRectangle:
+                                            pos: self.x + 1, self.y + 1
+                                            size: self.width - 2, self.height - 2
+                                            radius: [dp(13)]
 
-                        PanelCard:
-                            size_hint_y: None
-                            height: dp(40)
-                            radius: 12
-                            bg_color: 1, 1, 1, 1
-                            border_color: 0.84, 0.88, 0.93, 1
-                            padding: dp(12), dp(6)
-                            Label:
-                                text: "пассажир  •  +7 (916) 555-24-81"
-                                font_name: app.font_regular
-                                font_size: "14sp"
-                                color: 0.20, 0.29, 0.41, 1
-                                text_size: self.size
-                                halign: "left"
-                                valign: "middle"
+                                Widget:
 
-                        PanelCard:
-                            size_hint_y: None
-                            height: dp(40)
-                            radius: 12
-                            bg_color: 1, 1, 1, 1
-                            border_color: 0.84, 0.88, 0.93, 1
-                            padding: dp(12), dp(6)
-                            Label:
-                                text: "пассажир  •  +7 (985) 713-09-44"
-                                font_name: app.font_regular
-                                font_size: "14sp"
-                                color: 0.20, 0.29, 0.41, 1
-                                text_size: self.size
-                                halign: "left"
-                                valign: "middle"
+                        Screen:
+                            name: "conversation"
+                            BoxLayout:
+                                orientation: "vertical"
 
-                        PanelCard:
-                            size_hint_y: None
-                            height: dp(40)
-                            radius: 12
-                            bg_color: 1, 1, 1, 1
-                            border_color: 0.84, 0.88, 0.93, 1
-                            padding: dp(12), dp(6)
-                            Label:
-                                text: "диспетчер  •  +7 (495) 222-77-10"
-                                font_name: app.font_regular
-                                font_size: "14sp"
-                                color: 0.20, 0.29, 0.41, 1
-                                text_size: self.size
-                                halign: "left"
-                                valign: "middle"
+                                BoxLayout:
+                                    size_hint_y: None
+                                    height: dp(44)
+                                    padding: dp(4), dp(6)
+                                    spacing: dp(8)
+                                    canvas.before:
+                                        Color:
+                                            rgba: 1, 1, 1, 1
+                                        Rectangle:
+                                            pos: self.pos
+                                            size: self.size
 
-                        PanelCard:
-                            size_hint_y: None
-                            height: dp(40)
-                            radius: 12
-                            bg_color: 1, 1, 1, 1
-                            border_color: 0.84, 0.88, 0.93, 1
-                            padding: dp(12), dp(6)
-                            Label:
-                                text: "администратор  •  +7 (495) 222-77-00"
-                                font_name: app.font_regular
-                                font_size: "14sp"
-                                color: 0.20, 0.29, 0.41, 1
-                                text_size: self.size
-                                halign: "left"
-                                valign: "middle"
+                                    Button:
+                                        size_hint_x: None
+                                        width: dp(80)
+                                        text: "< Назад"
+                                        font_name: app.font_bold
+                                        font_size: "14sp"
+                                        color: 0.04, 0.10, 0.22, 1
+                                        background_normal: ""
+                                        background_down: ""
+                                        background_color: 0, 0, 0, 0
+                                        size_hint_y: None
+                                        height: dp(32)
+                                        pos_hint: {"center_y": 0.5}
+                                        on_release: root.close_chat()
 
-                        PanelCard:
-                            size_hint_y: None
-                            height: dp(40)
-                            radius: 10
-                            bg_color: 0.92, 0.94, 0.98, 1
-                            border_color: 0.92, 0.94, 0.98, 1
-                            padding: dp(12), dp(6)
-                            Label:
-                                text: "Здравствуйте, я у подъезда №2."
-                                font_name: app.font_regular
-                                font_size: "14sp"
-                                color: 0.29, 0.36, 0.49, 1
-                                text_size: self.size
-                                halign: "left"
-                                valign: "middle"
+                                    Label:
+                                        text: "Оператор"
+                                        font_name: app.font_bold
+                                        font_size: "16sp"
+                                        color: 0.04, 0.10, 0.22, 1
+                                        text_size: self.size
+                                        halign: "left"
+                                        valign: "middle"
 
-                        PanelCard:
-                            size_hint_y: None
-                            height: dp(40)
-                            radius: 10
-                            bg_color: 0.80, 0.92, 0.84, 1
-                            border_color: 0.80, 0.92, 0.84, 1
-                            padding: dp(12), dp(6)
-                            Label:
-                                text: "Принял, буду через 3 минуты."
-                                font_name: app.font_regular
-                                font_size: "14sp"
-                                color: 0.17, 0.40, 0.26, 1
-                                text_size: self.size
-                                halign: "left"
-                                valign: "middle"
-
-                        Widget:
+                                ChatPanel:
+                                    id: chat_panel
 
                 Screen:
                     name: "settings"
@@ -632,7 +623,7 @@
                             spacing: dp(8)
 
                             Label:
-                                text: "Иван Петров"
+                                text: "РРІР°РЅ РџРµС‚СЂРѕРІ"
                                 font_name: app.font_bold
                                 font_size: "28sp"
                                 color: 0.04, 0.10, 0.22, 1
@@ -715,28 +706,28 @@
                 spacing: dp(8)
 
                 NavButton:
-                    icon: "🚕"
+                    icon: "\U0001F695"
                     title_text: "в заказе"
                     subtitle_text: "активные"
                     active: root.active_tab == "orders"
                     on_release: root.switch_tab("orders")
 
                 NavButton:
-                    icon: "🗺"
+                    icon: "\U0001F5FA"
                     title_text: "карта"
                     subtitle_text: "gps"
                     active: root.active_tab == "map"
                     on_release: root.switch_tab("map")
 
                 NavButton:
-                    icon: "📞"
+                    icon: "\U0001F4DE"
                     title_text: "связь"
                     subtitle_text: "чаты"
                     active: root.active_tab == "chat"
                     on_release: root.switch_tab("chat")
 
                 NavButton:
-                    icon: "⚙"
+                    icon: "\u2699"
                     title_text: "настройки"
                     subtitle_text: "профиль"
                     active: root.active_tab == "settings"
@@ -746,3 +737,6 @@
     transition: NoTransition()
     LoginScreen:
     DashboardScreen:
+
+
+

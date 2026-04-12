@@ -2,10 +2,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from kivy.app import App
 from kivy.graphics import Color, Rectangle, RoundedRectangle
+from kivy.metrics import dp
 from kivy.properties import BooleanProperty, ListProperty, NumericProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
+from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 
@@ -19,7 +22,7 @@ class PanelCard(BoxLayout):
 
 
 class NavButton(Button):
-    icon = StringProperty("•")
+    icon = StringProperty("*")
     title_text = StringProperty("")
     subtitle_text = StringProperty("")
     active = BooleanProperty(False)
@@ -86,3 +89,52 @@ class OrderTile(PanelCard):
     client_text = StringProperty("")
     price_text = StringProperty("0 ₽")
     active_order = BooleanProperty(False)
+
+
+class MessageBubble(FloatLayout):
+    """Chat message bubble. Driver -> right, admin -> left, system -> centered."""
+
+    _MAX_W = dp(260)
+
+    def __init__(self, text: str, is_driver: bool, system: bool = False, **kwargs: object) -> None:
+        super().__init__(size_hint_y=None, **kwargs)
+
+        app = App.get_running_app()
+        font = getattr(app, "font_regular", "Roboto") if app else "Roboto"
+
+        text_color = (
+            (0.32, 0.39, 0.52, 1) if system else ((1, 1, 1, 1) if is_driver else (0.10, 0.15, 0.25, 1))
+        )
+        bg_color = (
+            (0.93, 0.95, 0.99, 1) if system else ((0.03, 0.09, 0.22, 1) if is_driver else (1, 1, 1, 1))
+        )
+
+        lbl = Label(
+            text=text,
+            font_name=font,
+            font_size="14sp",
+            text_size=(self._MAX_W - dp(24), None),
+            halign="left",
+            valign="middle",
+            size_hint=(None, None),
+            color=text_color,
+        )
+        lbl.texture_update()
+        bw = min(lbl.texture_size[0] + dp(24), self._MAX_W)
+        bh = lbl.texture_size[1] + dp(20)
+        lbl.size = (bw, bh)
+        lbl.text_size = (bw - dp(24), None)
+        if system:
+            lbl.pos_hint = {"center_x": 0.5, "center_y": 0.5}
+        else:
+            lbl.pos_hint = {"right": 1, "center_y": 0.5} if is_driver else {"x": 0, "center_y": 0.5}
+
+        with lbl.canvas.before:
+            Color(*bg_color)
+            rr = RoundedRectangle(pos=lbl.pos, size=lbl.size, radius=[dp(14)])
+
+        lbl.bind(pos=lambda _, v: setattr(rr, "pos", v))
+
+        self.height = bh + dp(8)
+        self.add_widget(lbl)
+

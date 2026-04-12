@@ -1,0 +1,145 @@
+#:import dp kivy.metrics.dp
+
+<TaxiStripe>:
+    size_hint: None, None
+
+<LoginScreen>:
+    orientation: "vertical"
+    padding: dp(30), dp(34), dp(30), dp(24)
+    spacing: dp(14)
+
+    canvas.before:
+        Color:
+            rgba: 0.93, 0.95, 0.98, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    Label:
+        text: "РЎ Р• Р  Р’ Р РЎ   Р” Р› РЇ   Рџ Рђ РЎ РЎ Рђ Р– Р Р  Рћ Р’"
+        color: 0.25, 0.34, 0.50, 1
+        font_name: app.font_bold
+        font_size: "21sp"
+        text_size: self.width, None
+        halign: "center"
+        valign: "middle"
+        size_hint_y: None
+        height: dp(38)
+
+    Label:
+        text: 'ПРОФСОЮЗ\n"РАССВЕТ"'
+        color: 0.03, 0.10, 0.24, 1
+        font_name: app.font_bold
+        font_size: "58sp"
+        line_height: 0.9
+        text_size: self.width, None
+        halign: "center"
+        valign: "middle"
+        size_hint_y: None
+        height: dp(188)
+
+    Label:
+        text: "Единый вход в приложение заказа такси"
+        color: 0.43, 0.51, 0.63, 1
+        font_name: app.font_regular
+        font_size: "18sp"
+        text_size: self.width, None
+        halign: "center"
+        valign: "middle"
+        size_hint_y: None
+        height: dp(62)
+
+    AnchorLayout:
+        size_hint_y: None
+        height: dp(22)
+        anchor_x: "center"
+        anchor_y: "center"
+        TaxiStripe:
+            size: dp(182), dp(14)
+
+    Widget:
+        size_hint_y: 1
+
+    BoxLayout:
+        orientation: "vertical"
+        size_hint_y: None
+        height: dp(246)
+        padding: dp(18)
+        spacing: dp(12)
+        canvas.before:
+            Color:
+                rgba: 0.985, 0.99, 1, 1
+            RoundedRectangle:
+                pos: self.pos
+                size: self.size
+                radius: [dp(20), dp(20), dp(20), dp(20)]
+            Color:
+                rgba: 0.86, 0.89, 0.94, 1
+            RoundedRectangle:
+                pos: self.x - 1, self.y - 1
+                size: self.width + 2, self.height + 2
+                radius: [dp(21), dp(21), dp(21), dp(21)]
+            Color:
+                rgba: 0.985, 0.99, 1, 1
+            RoundedRectangle:
+                pos: self.pos
+                size: self.size
+                radius: [dp(20), dp(20), dp(20), dp(20)]
+
+        Label:
+            text: "Введите свой пригласительный код"
+            color: 0.19, 0.27, 0.40, 1
+            font_name: app.font_bold
+            font_size: "17sp"
+            text_size: self.width, None
+            halign: "left"
+            valign: "middle"
+            size_hint_y: None
+            height: dp(32)
+
+        TextInput:
+            id: invite_input
+            hint_text: "Например: RASSVET-54321"
+            multiline: False
+            input_type: "text"
+            font_name: app.font_regular
+            font_size: "14sp"
+            foreground_color: 0.20, 0.29, 0.41, 1
+            hint_text_color: 0.56, 0.62, 0.70, 1
+            background_normal: ""
+            background_active: ""
+            background_color: 0.97, 0.98, 1, 1
+            cursor_color: 0.16, 0.26, 0.45, 1
+            padding: dp(14), dp(17), dp(14), dp(10)
+            size_hint_y: None
+            height: dp(54)
+
+        Button:
+            text: "Продолжить"
+            size_hint_y: None
+            height: dp(56)
+            background_normal: ""
+            background_down: ""
+            background_color: 0, 0, 0, 0
+            color: 1, 1, 1, 1
+            font_name: app.font_bold
+            font_size: "18sp"
+            on_release: root.submit_code()
+            canvas.before:
+                Color:
+                    rgba: 0.03, 0.09, 0.22, 1
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [dp(14), dp(14), dp(14), dp(14)]
+
+        Label:
+            text: root.status_text
+            color: 0.36, 0.46, 0.60, 1
+            font_name: app.font_regular
+            font_size: "12sp"
+            text_size: self.width, None
+            halign: "left"
+            valign: "middle"
+            size_hint_y: None
+            height: dp(34)
