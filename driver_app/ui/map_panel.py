@@ -1,147 +1,199 @@
 from __future__ import annotations
 
+import os
+import struct
+import tempfile
+import zlib
 from threading import Lock, Thread
 
 from kivy.clock import Clock
-from kivy.graphics import Color, Ellipse, Line, RoundedRectangle
+from kivy.graphics import Color, RoundedRectangle
 from kivy.metrics import dp
-from kivy.properties import NumericProperty, StringProperty
+from kivy.properties import StringProperty
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.button import Button
+from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
-from kivy.uix.widget import Widget
 
 from driver_app.services.location import DEFAULT_LOCATION, GeoLocation, get_best_location
 
+try:
+    from kivy_garden.mapview import MapMarker, MapView
 
-class _SimpleMapCanvas(Widget):
-    """Lightweight map placeholder with a grid and one red location dot."""
-
-    dot_x_ratio = NumericProperty(0.5)
-    dot_y_ratio = NumericProperty(0.5)
-
-    def __init__(self, **kwargs: object) -> None:
-        super().__init__(**kwargs)
-        self.bind(pos=self._redraw, size=self._redraw)
-        self.bind(dot_x_ratio=self._redraw, dot_y_ratio=self._redraw)
-        self._redraw()
-
-    def _redraw(self, *_args: object) -> None:
-        self.canvas.before.clear()
-        with self.canvas.before:
-            # Card background
-            Color(0.96, 0.97, 0.99, 1)
-            RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(14)])
-
-            # Soft grid to mimic a simple map
-            Color(0.86, 0.89, 0.94, 1)
-            for step in range(1, 5):
-                x = self.x + self.width * step / 5
-                y = self.y + self.height * step / 5
-                Line(points=[x, self.y + dp(8), x, self.top - dp(8)], width=1.0)
-                Line(points=[self.x + dp(8), y, self.right - dp(8), y], width=1.0)
-
-            # Current location red dot
-            cx = self.x + self.width * self.dot_x_ratio
-            cy = self.y + self.height * self.dot_y_ratio
-            dot_r = dp(8)
-
-            Color(0.86, 0.12, 0.12, 0.22)
-            Ellipse(pos=(cx - dot_r * 2, cy - dot_r * 2), size=(dot_r * 4, dot_r * 4))
-
-            Color(1, 1, 1, 1)
-            Ellipse(pos=(cx - dot_r - dp(1), cy - dot_r - dp(1)), size=((dot_r + dp(1)) * 2, (dot_r + dp(1)) * 2))
-
-            Color(0.86, 0.12, 0.12, 1)
-            Ellipse(pos=(cx - dot_r, cy - dot_r), size=(dot_r * 2, dot_r * 2))
+    MAPVIEW_AVAILABLE = True
+except Exception:
+    MAPVIEW_AVAILABLE = False
+    MapView = object  # type: ignore[assignment,misc]
+    MapMarker = object  # type: ignore[assignment,misc]
 
 
-class MapPanel(BoxLayout):
+def _make_car_png(size: int = 64) -> bytes:
+    """Create a small car icon PNG without external dependencies."""
+
+    img = [[[0, 0, 0, 0] for _ in range(size)] for _ in range(size)]
+
+    def fill_rect(x1: int, y1: int, x2: int, y2: int, rgba: tuple[int, int, int, int]) -> None:
+        for y in range(max(y1, 0), min(y2, size)):
+            for x in range(max(x1, 0), min(x2, size)):
+                img[y][x] = [rgba[0], rgba[1], rgba[2], rgba[3]]
+
+    def fill_circle(cx: int, cy: int, radius: int, rgba: tuple[int, int, int, int]) -> None:
+        radius_sq = radius * radius
+        for y in range(cy - radius, cy + radius + 1):
+            if y < 0 or y >= size:
+                continue
+            for x in range(cx - radius, cx + radius + 1):
+                if x < 0 or x >= size:
+                    continue
+                dx = x - cx
+                dy = y - cy
+                if dx * dx + dy * dy <= radius_sq:
+                    img[y][x] = [rgba[0], rgba[1], rgba[2], rgba[3]]
+
+    fill_circle(size // 2, 50, 18, (0, 0, 0, 60))
+    fill_rect(12, 28, 52, 43, (11, 46, 115, 255))
+    fill_rect(20, 20, 44, 30, (11, 46, 115, 255))
+    fill_rect(23, 22, 32, 29, (196, 225, 255, 255))
+    fill_rect(33, 22, 41, 29, (196, 225, 255, 255))
+    fill_rect(50, 32, 53, 37, (255, 211, 102, 255))
+    fill_circle(22, 43, 6, (28, 33, 44, 255))
+    fill_circle(42, 43, 6, (28, 33, 44, 255))
+    fill_circle(22, 43, 3, (215, 223, 235, 255))
+    fill_circle(42, 43, 3, (215, 223, 235, 255))
+
+    rows: list[bytes] = []
+    for y in range(size):
+        row = bytearray([0])
+        for x in range(size):
+            r, g, b, a = img[y][x]
+            row += bytes([r, g, b, a])
+        rows.append(bytes(row))
+    raw = b"".join(rows)
+
+    def chunk(tag: bytes, data: bytes) -> bytes:
+        body = tag + data
+        crc = zlib.crc32(body) & 0xFFFF_FFFF
+        return struct.pack(">I", len(data)) + body + struct.pack(">I", crc)
+
+    ihdr = struct.pack(">IIBBBBB", size, size, 8, 6, 0, 0, 0)
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", ihdr)
+        + chunk(b"IDAT", zlib.compress(raw, 9))
+        + chunk(b"IEND", b"")
+    )
+
+
+def _car_icon_path() -> str:
+    path = os.path.join(tempfile.gettempdir(), "rassvet_car_marker.png")
+    if not os.path.exists(path):
+        with open(path, "wb") as output:
+            output.write(_make_car_png())
+    return path
+
+
+_CAR_ICON = _car_icon_path()
+
+
+class MapPanel(FloatLayout):
     city_text = StringProperty("Город: определяем...")
     gps_status_text = StringProperty("Поиск местоположения...")
     coord_text = StringProperty("—, —")
 
     def __init__(self, **kwargs: object) -> None:
-        super().__init__(orientation="vertical", spacing=dp(8), **kwargs)
-
+        super().__init__(**kwargs)
+        self._map_view: MapView | None = None
+        self._marker: MapMarker | None = None
+        self._status_city: Label | None = None
+        self._status_gps: Label | None = None
         self._lock = Lock()
         self._loading = False
+        self._centered_once = False
         self._last: GeoLocation = DEFAULT_LOCATION
-
-        self._city_label = Label(
-            text=self.city_text,
-            size_hint_y=None,
-            height=dp(22),
-            font_size="14sp",
-            color=(0.08, 0.16, 0.30, 1),
-            halign="left",
-            valign="middle",
-        )
-        self._city_label.bind(size=self._sync_text_size)
-
-        self._gps_label = Label(
-            text=self.gps_status_text,
-            size_hint_y=None,
-            height=dp(22),
-            font_size="13sp",
-            color=(0.28, 0.39, 0.55, 1),
-            halign="left",
-            valign="middle",
-        )
-        self._gps_label.bind(size=self._sync_text_size)
-
-        self._coord_label = Label(
-            text=self.coord_text,
-            size_hint_y=None,
-            height=dp(20),
-            font_size="12sp",
-            color=(0.37, 0.49, 0.66, 1),
-            halign="left",
-            valign="middle",
-        )
-        self._coord_label.bind(size=self._sync_text_size)
-
-        self.add_widget(self._city_label)
-        self.add_widget(self._gps_label)
-        self.add_widget(self._coord_label)
-
-        self._canvas = _SimpleMapCanvas()
-        self.add_widget(self._canvas)
-
-        controls = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(8))
-
-        refresh_btn = Button(
-            text="Обновить GPS",
-            font_size="14sp",
-            color=(1, 1, 1, 1),
-            background_normal="",
-            background_down="",
-            background_color=(0.03, 0.09, 0.22, 1),
-        )
-        refresh_btn.bind(on_release=lambda *_: self.refresh_location())
-        controls.add_widget(refresh_btn)
-
-        center_btn = Button(
-            text="Показать точку",
-            font_size="14sp",
-            color=(0.03, 0.09, 0.22, 1),
-            background_normal="",
-            background_down="",
-            background_color=(0.88, 0.92, 0.98, 1),
-        )
-        center_btn.bind(on_release=lambda *_: self.center_on_me())
-        controls.add_widget(center_btn)
-
-        self.add_widget(controls)
-
-        Clock.schedule_once(lambda *_: self._fetch(center=True), 0)
-        Clock.schedule_interval(lambda *_: self._fetch(center=False), 12)
+        Clock.schedule_once(lambda *_: self._init_ui(), 0)
 
     def refresh_location(self) -> None:
         self._fetch(center=True)
 
     def center_on_me(self) -> None:
-        self._apply_to_canvas(self._last, recenter=True)
+        if self._map_view is not None:
+            self._map_view.center_on(self._last.latitude, self._last.longitude)
+            self._map_view.zoom = 15
+
+    def _init_ui(self) -> None:
+        if MAPVIEW_AVAILABLE:
+            lat = DEFAULT_LOCATION.latitude
+            lon = DEFAULT_LOCATION.longitude
+            self._map_view = MapView(  # type: ignore[call-arg]
+                lat=lat,
+                lon=lon,
+                zoom=14,
+                size_hint=(1, 1),
+            )
+            self.add_widget(self._map_view)
+
+            self._marker = MapMarker(  # type: ignore[call-arg]
+                lat=lat,
+                lon=lon,
+                source=_CAR_ICON,
+                anchor_x=0.5,
+                anchor_y=0.22,
+            )
+            self._map_view.add_marker(self._marker)
+        else:
+            self.add_widget(
+                Label(
+                    text="Карта недоступна. Установите kivy-garden.mapview.",
+                    color=(0.2, 0.3, 0.45, 1),
+                    font_size="16sp",
+                )
+            )
+
+        status_box = BoxLayout(
+            orientation="vertical",
+            size_hint=(1, None),
+            height=dp(56),
+            pos_hint={"top": 1},
+            padding=(dp(12), dp(6), dp(12), dp(4)),
+            spacing=dp(1),
+        )
+        with status_box.canvas.before:
+            Color(1, 1, 1, 0.8)
+            bg = RoundedRectangle(pos=status_box.pos, size=status_box.size, radius=[0, 0, dp(10), dp(10)])
+        status_box.bind(pos=lambda _, value: setattr(bg, "pos", value))
+        status_box.bind(size=lambda _, value: setattr(bg, "size", value))
+
+        self._status_city = Label(
+            text=self.city_text,
+            color=(0.06, 0.12, 0.25, 1),
+            font_size="14sp",
+            halign="left",
+            valign="middle",
+        )
+        self._status_city.bind(size=self._sync_text_size)
+
+        self._status_gps = Label(
+            text=self._status_line(),
+            color=(0.23, 0.32, 0.46, 1),
+            font_size="12sp",
+            halign="left",
+            valign="middle",
+        )
+        self._status_gps.bind(size=self._sync_text_size)
+
+        status_box.add_widget(self._status_city)
+        status_box.add_widget(self._status_gps)
+        self.add_widget(status_box)
+
+        self._apply(DEFAULT_LOCATION, center=False)
+        self._fetch(center=True)
+        Clock.schedule_interval(lambda *_: self._fetch(center=False), 8)
+
+    @staticmethod
+    def _sync_text_size(label: Label, _size: tuple[float, float]) -> None:
+        label.text_size = (label.width, None)
+
+    def _status_line(self) -> str:
+        return f"{self.gps_status_text} • {self.coord_text}"
 
     def _fetch(self, center: bool) -> None:
         with self._lock:
@@ -149,51 +201,40 @@ class MapPanel(BoxLayout):
                 return
             self._loading = True
 
-        def _worker() -> None:
+        def worker() -> None:
             loc = get_best_location()
             Clock.schedule_once(lambda *_: self._apply(loc, center=center), 0)
             with self._lock:
                 self._loading = False
 
-        Thread(target=_worker, daemon=True).start()
+        Thread(target=worker, daemon=True).start()
 
     def _apply(self, loc: GeoLocation, *, center: bool) -> None:
         self._last = loc
-
-        self.city_text = f"Город: {loc.city}"
         self.coord_text = f"{loc.latitude:.5f}, {loc.longitude:.5f}"
+        self.city_text = f"Город: {loc.city}"
 
         if loc.source == "gps":
             self.gps_status_text = "GPS активен"
         elif loc.source == "network":
-            self.gps_status_text = "GPS недоступен, используется сеть"
+            self.gps_status_text = "GPS недоступен, использована геолокация сети"
         else:
-            self.gps_status_text = "GPS недоступен, тестовая точка"
+            self.gps_status_text = "GPS недоступен, используется тестовая точка"
 
-        self._city_label.text = self.city_text
-        self._gps_label.text = self.gps_status_text
-        self._coord_label.text = self.coord_text
+        if self._status_city is not None:
+            self._status_city.text = self.city_text
+        if self._status_gps is not None:
+            self._status_gps.text = self._status_line()
 
-        self._apply_to_canvas(loc, recenter=center)
-
-    def _apply_to_canvas(self, loc: GeoLocation, recenter: bool) -> None:
-        # Lightweight projection from lon/lat into canvas ratios.
-        rx = (loc.longitude + 180.0) / 360.0
-        ry = 1.0 - ((loc.latitude + 90.0) / 180.0)
-
-        # Keep the point safely inside rounded card edges.
-        x_ratio = min(max(rx, 0.08), 0.92)
-        y_ratio = min(max(ry, 0.08), 0.92)
-
-        if recenter:
-            self._canvas.dot_x_ratio = x_ratio
-            self._canvas.dot_y_ratio = y_ratio
+        if self._map_view is None or self._marker is None:
             return
 
-        # Smooth movement for periodic refresh.
-        self._canvas.dot_x_ratio = self._canvas.dot_x_ratio * 0.65 + x_ratio * 0.35
-        self._canvas.dot_y_ratio = self._canvas.dot_y_ratio * 0.65 + y_ratio * 0.35
+        self._marker.lat = loc.latitude
+        self._marker.lon = loc.longitude
 
-    @staticmethod
-    def _sync_text_size(label: Label, _size: tuple[float, float]) -> None:
-        label.text_size = (label.width, None)
+        first_real = not self._centered_once and loc.source != "fallback"
+        if center or first_real:
+            self._map_view.center_on(loc.latitude, loc.longitude)
+            self._map_view.zoom = 15
+            if loc.source != "fallback":
+                self._centered_once = True

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from pathlib import Path
 import re
+from pathlib import Path
 
 from kivy.app import App
 from kivy.graphics import Color, Rectangle, RoundedRectangle
@@ -43,7 +43,6 @@ class NavButton(Button):
         self._update_display_text()
 
     def _update_display_text(self) -> None:
-        # Build multiline label text in Python to avoid escaped \n artifacts in kv.
         if _WINDOWS_EMOJI_FONT.exists():
             emoji_font = _WINDOWS_EMOJI_FONT.as_posix()
             icon_line = f"[font={emoji_font}][size=20]{self.icon}[/size][/font]"
@@ -94,7 +93,7 @@ class OrderTile(PanelCard):
 
 
 class MessageBubble(FloatLayout):
-    """Chat message bubble. Driver -> right, admin -> left, system -> centered."""
+    """Chat bubble: driver messages to the right, operator messages to the left."""
 
     _MAX_W = dp(260)
 
@@ -102,16 +101,16 @@ class MessageBubble(FloatLayout):
         super().__init__(size_hint_y=None, **kwargs)
 
         app = App.get_running_app()
-        font = getattr(app, "font_regular", "Roboto") if app else "Roboto"
-        emoji_font = getattr(app, "font_emoji", "") if app else ""
+        font_regular = getattr(app, "font_regular", "Roboto") if app else "Roboto"
+        font_emoji = getattr(app, "font_emoji", "") if app else ""
 
         safe_text = (
             text.replace("&", "&amp;")
-            .replace("[", "&bl;")
-            .replace("]", "&br;")
+            .replace("[", "&#91;")
+            .replace("]", "&#93;")
         )
-        if emoji_font:
-            safe_text = _EMOJI_RE.sub(lambda m: f"[font={emoji_font}]{m.group(0)}[/font]", safe_text)
+        if font_emoji:
+            safe_text = _EMOJI_RE.sub(lambda m: f"[font={font_emoji}]{m.group(0)}[/font]", safe_text)
 
         text_color = (
             (0.32, 0.39, 0.52, 1) if system else ((1, 1, 1, 1) if is_driver else (0.10, 0.15, 0.25, 1))
@@ -120,10 +119,10 @@ class MessageBubble(FloatLayout):
             (0.93, 0.95, 0.99, 1) if system else ((0.03, 0.09, 0.22, 1) if is_driver else (1, 1, 1, 1))
         )
 
-        lbl = Label(
+        label = Label(
             text=safe_text,
             markup=True,
-            font_name=font,
+            font_name=font_regular,
             font_size="14sp",
             text_size=(self._MAX_W - dp(24), None),
             halign="left",
@@ -131,22 +130,23 @@ class MessageBubble(FloatLayout):
             size_hint=(None, None),
             color=text_color,
         )
-        lbl.texture_update()
-        bw = min(lbl.texture_size[0] + dp(24), self._MAX_W)
-        bh = lbl.texture_size[1] + dp(20)
-        lbl.size = (bw, bh)
-        lbl.text_size = (bw - dp(24), None)
+        label.texture_update()
+
+        bubble_w = min(label.texture_size[0] + dp(24), self._MAX_W)
+        bubble_h = label.texture_size[1] + dp(20)
+        label.size = (bubble_w, bubble_h)
+        label.text_size = (bubble_w - dp(24), None)
+
         if system:
-            lbl.pos_hint = {"center_x": 0.5, "center_y": 0.5}
+            label.pos_hint = {"center_x": 0.5, "center_y": 0.5}
         else:
-            lbl.pos_hint = {"right": 1, "center_y": 0.5} if is_driver else {"x": 0, "center_y": 0.5}
+            label.pos_hint = {"right": 1, "center_y": 0.5} if is_driver else {"x": 0, "center_y": 0.5}
 
-        with lbl.canvas.before:
+        with label.canvas.before:
             Color(*bg_color)
-            rr = RoundedRectangle(pos=lbl.pos, size=lbl.size, radius=[dp(14)])
+            rect = RoundedRectangle(pos=label.pos, size=label.size, radius=[dp(14)])
 
-        lbl.bind(pos=lambda _, v: setattr(rr, "pos", v))
+        label.bind(pos=lambda _, value: setattr(rect, "pos", value))
 
-        self.height = bh + dp(8)
-        self.add_widget(lbl)
-
+        self.height = bubble_h + dp(8)
+        self.add_widget(label)

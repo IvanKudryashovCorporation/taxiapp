@@ -38,8 +38,8 @@ from kivy.lang import Builder
 from kivy.properties import StringProperty
 
 from passenger_app.ui.fonts import prepare_fonts
-import passenger_app.ui  # noqa: F401 — registers all KV widget/screen classes
-from passenger_app.ui.screens.login import LoginScreen  # noqa: F401
+import passenger_app.ui  # noqa: F401 - registers KV classes
+from passenger_app.ui.screens.login import LoginScreen
 
 
 class PassengerMobileApp(App):

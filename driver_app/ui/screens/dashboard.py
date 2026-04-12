@@ -12,7 +12,11 @@ class DashboardScreen(Screen):
     earned_text = StringProperty("15 840 ₽")
     driver_line = StringProperty("ID водителя: DR-1024 · Комфорт+")
 
-    def on_kv_post(self, *_args) -> None:
+    def __init__(self, **kwargs: object) -> None:
+        super().__init__(**kwargs)
+        self._driver_id = "DR-1024"
+
+    def on_kv_post(self, *_args: object) -> None:
         self.switch_tab("orders")
 
     def switch_tab(self, tab_name: str) -> None:
@@ -46,12 +50,12 @@ class DashboardScreen(Screen):
 
     def apply_driver_code(self, invite_code: str) -> None:
         suffix = invite_code[-4:].upper() if invite_code else "1024"
-        driver_id = f"DR-{suffix}"
-        self.driver_line = f"ID водителя: {driver_id} · Комфорт+"
+        self._driver_id = f"DR-{suffix}"
+        self.driver_line = f"ID водителя: {self._driver_id} · Комфорт+"
 
         chat = self._get_chat_panel()
         if chat is not None:
-            chat.setup(driver_id)
+            chat.setup(self._driver_id)
 
     def open_chat(self, _contact: str) -> None:
         self.current_title = "Оператор"
@@ -65,7 +69,7 @@ class DashboardScreen(Screen):
             return
 
         if not getattr(chat, "_driver_id", ""):
-            chat.setup("DR-1024")
+            chat.setup(self._driver_id)
         else:
             chat.start_polling()
 
@@ -73,10 +77,6 @@ class DashboardScreen(Screen):
         self.current_title = "Связь"
         self._show_chat_contacts()
         self._stop_chat_polling()
-
-    # ------------------------------------------------------------------
-    # Helpers
-    # ------------------------------------------------------------------
 
     def _show_chat_contacts(self) -> None:
         nav = self.ids.get("chat_nav")
