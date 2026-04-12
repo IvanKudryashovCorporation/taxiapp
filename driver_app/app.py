@@ -48,6 +48,7 @@ class DriverMobileApp(App):
     title = APP_TITLE
     font_regular = StringProperty("Roboto")
     font_bold = StringProperty("Roboto-Bold")
+    font_emoji = StringProperty("Roboto")
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -55,6 +56,8 @@ class DriverMobileApp(App):
         regular, bold = prepare_fonts()
         self.font_regular = regular
         self.font_bold = bold
+        emoji_path = Path(r"C:\Windows\Fonts\seguiemj.ttf")
+        self.font_emoji = emoji_path.as_posix() if emoji_path.exists() else regular
 
     def build(self) -> DriverRoot:
         if IS_MOBILE:

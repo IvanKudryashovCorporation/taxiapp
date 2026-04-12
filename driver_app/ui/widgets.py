@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 
 from kivy.app import App
 from kivy.graphics import Color, Rectangle, RoundedRectangle
@@ -13,6 +14,7 @@ from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 
 _WINDOWS_EMOJI_FONT = Path(r"C:\Windows\Fonts\seguiemj.ttf")
+_EMOJI_RE = re.compile(r"[\U0001F300-\U0001FAFF\u2600-\u27BF]")
 
 
 class PanelCard(BoxLayout):
@@ -101,6 +103,15 @@ class MessageBubble(FloatLayout):
 
         app = App.get_running_app()
         font = getattr(app, "font_regular", "Roboto") if app else "Roboto"
+        emoji_font = getattr(app, "font_emoji", "") if app else ""
+
+        safe_text = (
+            text.replace("&", "&amp;")
+            .replace("[", "&bl;")
+            .replace("]", "&br;")
+        )
+        if emoji_font:
+            safe_text = _EMOJI_RE.sub(lambda m: f"[font={emoji_font}]{m.group(0)}[/font]", safe_text)
 
         text_color = (
             (0.32, 0.39, 0.52, 1) if system else ((1, 1, 1, 1) if is_driver else (0.10, 0.15, 0.25, 1))
@@ -110,7 +121,8 @@ class MessageBubble(FloatLayout):
         )
 
         lbl = Label(
-            text=text,
+            text=safe_text,
+            markup=True,
             font_name=font,
             font_size="14sp",
             text_size=(self._MAX_W - dp(24), None),
