@@ -40,7 +40,7 @@ from kivy.properties import StringProperty
 from driver_app.services.auth import InviteCodeRegistry
 from driver_app.services.backend import ping_driver
 from driver_app.ui.fonts import prepare_fonts
-import driver_app.ui  # noqa: F401 — registers all KV widget/screen classes
+import driver_app.ui  # noqa: F401 - registers all KV widget and screen classes
 from driver_app.ui.root import DriverRoot
 
 

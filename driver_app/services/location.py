@@ -24,7 +24,8 @@ DEFAULT_LOCATION = GeoLocation(
 
 
 def get_device_location(timeout: float = 6.0) -> GeoLocation:
-    """Try to read device GPS coordinates via plyer (works on mobile builds)."""
+    """Try to read device GPS coordinates via plyer on mobile builds."""
+
     try:
         from kivy.utils import platform as kivy_platform
     except Exception:
@@ -75,7 +76,8 @@ def get_device_location(timeout: float = 6.0) -> GeoLocation:
 
 
 def get_network_location(timeout: float = 7.0) -> GeoLocation:
-    """Get approximate location via network/IP when GPS provider is unavailable."""
+    """Get approximate location via network/IP when GPS is unavailable."""
+
     headers = {"User-Agent": "rassvet-driver/1.0 (+desktop)"}
     providers: list[tuple[str, str, str, str]] = [
         ("https://ipapi.co/json/", "latitude", "longitude", "city"),
@@ -105,6 +107,7 @@ def get_network_location(timeout: float = 7.0) -> GeoLocation:
 
 def get_best_location() -> GeoLocation:
     """GPS first, then network geolocation, then fallback."""
+
     try:
         return get_device_location()
     except Exception:
@@ -118,6 +121,7 @@ def get_best_location() -> GeoLocation:
 
 def reverse_city(latitude: float, longitude: float, timeout: float = 8.0) -> str:
     """Resolve city name by coordinates using OpenStreetMap Nominatim."""
+
     headers = {"User-Agent": "rassvet-driver/1.0 (+desktop)"}
     params = {
         "format": "jsonv2",

@@ -261,7 +261,7 @@
             valign: "middle"
 
     Label:
-        text: "[color=#f01986]вЂў[/color]  " + root.route_text
+        text: "[color=#f01986]•[/color]  " + root.route_text
         markup: True
         font_name: app.font_regular
         font_size: "14sp"
@@ -311,7 +311,7 @@
             height: dp(38)
 
         Label:
-            text: 'РџР РћР¤РЎРћР®Р—\n"Р РђРЎРЎР’Р•Рў"'
+            text: 'ПРОФСОЮЗ\n"РАССВЕТ"'
             color: 0.03, 0.10, 0.24, 1
             font_name: app.font_bold
             font_size: "58sp"
@@ -323,7 +323,7 @@
             height: dp(188)
 
         Label:
-            text: "Р•РґРёРЅС‹Р№ РІС…РѕРґ РІ СЂР°Р±РѕС‡РµРµ РїСЂРёР»РѕР¶РµРЅРёРµ С‚Р°РєСЃРёСЃС‚Р°"
+            text: "Единый вход в рабочее приложение таксиста"
             color: 0.43, 0.51, 0.63, 1
             font_name: app.font_regular
             font_size: "18sp"
@@ -354,7 +354,7 @@
             spacing: dp(12)
 
             Label:
-                text: "Р’РІРµРґРёС‚Рµ СЃРІРѕР№ РїСЂРёРіР»Р°СЃРёС‚РµР»СЊРЅС‹Р№ РєРѕРґ"
+                text: "Введите свой пригласительный код"
                 color: 0.19, 0.27, 0.40, 1
                 font_name: app.font_bold
                 font_size: "17sp"
@@ -366,7 +366,7 @@
 
             TextInput:
                 id: invite_input
-                hint_text: "РќР°РїСЂРёРјРµСЂ: RASSVET-12345"
+                hint_text: "Например: RASSVET-12345"
                 multiline: False
                 input_type: "text"
                 font_name: app.font_regular
@@ -382,7 +382,7 @@
                 height: dp(54)
 
             Button:
-                text: "РџСЂРѕРґРѕР»Р¶РёС‚СЊ"
+                text: "Продолжить"
                 size_hint_y: None
                 height: dp(56)
                 background_normal: ""
@@ -435,14 +435,16 @@
 
             BoxLayout:
                 orientation: "horizontal"
+
                 Label:
-                    text: "Р·Р°СЂР°Р±РѕС‚Р°РЅРѕ:"
+                    text: "заработано:"
                     color: 0.04, 0.10, 0.22, 1
                     font_name: app.font_bold
                     font_size: "18sp"
                     text_size: self.size
                     halign: "left"
                     valign: "middle"
+
                 Label:
                     text: root.earned_text
                     color: 0.04, 0.10, 0.22, 1
@@ -477,50 +479,55 @@
 
                 Screen:
                     name: "orders"
+
                     BoxLayout:
                         orientation: "vertical"
                         spacing: dp(10)
 
                         OrderTile:
                             active_order: True
-                            status_text: "РђРєС‚РёРІРЅС‹Р№"
-                            route_text: "РўРІРµСЂСЃРєР°СЏ 12 в†’ Р›РµРЅРёРЅРіСЂР°РґСЃРєРёР№ РІРѕРєР·Р°Р»"
-                            client_text: "РљР»РёРµРЅС‚: +7 (916) 555-24-81"
-                            price_text: "790 в‚Ѕ"
+                            status_text: "Активный"
+                            route_text: "Тверская 12 → Ленинградский вокзал"
+                            client_text: "Клиент: +7 (916) 555-24-81"
+                            price_text: "790 ₽"
 
                         OrderTile:
                             active_order: False
-                            status_text: "РћР¶РёРґР°РµС‚"
-                            route_text: "РџСЂРѕСЃРїРµРєС‚ РњРёСЂР° 45 в†’ РЁРµСЂРµРјРµС‚СЊРµРІРѕ D"
-                            client_text: "РљР»РёРµРЅС‚: +7 (985) 713-09-44"
-                            price_text: "1 120 в‚Ѕ"
+                            status_text: "Ожидает"
+                            route_text: "Проспект Мира 45 → Шереметьево D"
+                            client_text: "Клиент: +7 (985) 713-09-44"
+                            price_text: "1 120 ₽"
 
                         OrderTile:
                             active_order: False
-                            status_text: "РћР¶РёРґР°РµС‚"
-                            route_text: "РљСѓС‚СѓР·РѕРІСЃРєРёР№ 21 в†’ РљРёРµРІСЃРєРёР№ РІРѕРєР·Р°Р»"
-                            client_text: "РљР»РёРµРЅС‚: +7 (903) 777-16-53"
-                            price_text: "640 в‚Ѕ"
+                            status_text: "Ожидает"
+                            route_text: "Кутузовский 21 → Киевский вокзал"
+                            client_text: "Клиент: +7 (903) 777-16-53"
+                            price_text: "640 ₽"
 
                         Widget:
 
                 Screen:
                     name: "map"
+
                     MapPanel:
                         id: map_panel
 
                 Screen:
                     name: "chat"
+
                     ScreenManager:
                         id: chat_nav
                         transition: NoTransition()
 
                         Screen:
                             name: "contacts"
+
                             BoxLayout:
                                 orientation: "vertical"
                                 spacing: dp(12)
                                 padding: dp(4), dp(4)
+
                                 Button:
                                     size_hint_y: None
                                     height: dp(80)
@@ -554,6 +561,7 @@
 
                         Screen:
                             name: "conversation"
+
                             BoxLayout:
                                 orientation: "vertical"
 
@@ -598,12 +606,13 @@
 
                 Screen:
                     name: "settings"
+
                     BoxLayout:
                         orientation: "vertical"
                         spacing: dp(10)
 
                         Label:
-                            text: "РќР°СЃС‚СЂРѕР№РєРё"
+                            text: "Настройки"
                             font_name: app.font_bold
                             font_size: "17sp"
                             color: 0.04, 0.10, 0.22, 1
@@ -623,7 +632,7 @@
                             spacing: dp(8)
 
                             Label:
-                                text: "Р ВР Р†Р В°Р Р… Р СџР ВµРЎвЂљРЎР‚Р С•Р Р†"
+                                text: "Иван Петров"
                                 font_name: app.font_bold
                                 font_size: "28sp"
                                 color: 0.04, 0.10, 0.22, 1
@@ -647,14 +656,16 @@
                             BoxLayout:
                                 size_hint_y: None
                                 height: dp(34)
+
                                 Label:
-                                    text: "РџСЂРёРЅРёРјР°С‚СЊ Р·Р°РєР°Р·С‹ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё"
+                                    text: "Принимать заказы автоматически"
                                     font_name: app.font_regular
                                     font_size: "15sp"
                                     color: 0.20, 0.29, 0.41, 1
                                     text_size: self.size
                                     halign: "left"
                                     valign: "middle"
+
                                 CheckBox:
                                     active: True
                                     size_hint_x: None
@@ -663,14 +674,16 @@
                             BoxLayout:
                                 size_hint_y: None
                                 height: dp(34)
+
                                 Label:
-                                    text: "РќРѕС‡РЅРѕР№ СЂРµР¶РёРј Р·Р°РєР°Р·РѕРІ"
+                                    text: "Ночной режим заказов"
                                     font_name: app.font_regular
                                     font_size: "15sp"
                                     color: 0.20, 0.29, 0.41, 1
                                     text_size: self.size
                                     halign: "left"
                                     valign: "middle"
+
                                 CheckBox:
                                     active: True
                                     size_hint_x: None
@@ -679,14 +692,16 @@
                             BoxLayout:
                                 size_hint_y: None
                                 height: dp(34)
+
                                 Label:
-                                    text: "Р“РѕР»РѕСЃРѕРІС‹Рµ СѓРІРµРґРѕРјР»РµРЅРёСЏ"
+                                    text: "Голосовые уведомления"
                                     font_name: app.font_regular
                                     font_size: "15sp"
                                     color: 0.20, 0.29, 0.41, 1
                                     text_size: self.size
                                     halign: "left"
                                     valign: "middle"
+
                                 CheckBox:
                                     active: True
                                     size_hint_x: None
@@ -707,29 +722,29 @@
 
                 NavButton:
                     icon: "\U0001F695"
-                    title_text: "РІ Р·Р°РєР°Р·Рµ"
-                    subtitle_text: "Р°РєС‚РёРІРЅС‹Рµ"
+                    title_text: "в заказе"
+                    subtitle_text: "активные"
                     active: root.active_tab == "orders"
                     on_release: root.switch_tab("orders")
 
                 NavButton:
                     icon: "\U0001F5FA"
-                    title_text: "РєР°СЂС‚Р°"
+                    title_text: "карта"
                     subtitle_text: "gps"
                     active: root.active_tab == "map"
                     on_release: root.switch_tab("map")
 
                 NavButton:
                     icon: "\U0001F4DE"
-                    title_text: "СЃРІСЏР·СЊ"
-                    subtitle_text: "С‡Р°С‚С‹"
+                    title_text: "связь"
+                    subtitle_text: "чаты"
                     active: root.active_tab == "chat"
                     on_release: root.switch_tab("chat")
 
                 NavButton:
                     icon: "\u2699"
-                    title_text: "РЅР°СЃС‚СЂРѕР№РєРё"
-                    subtitle_text: "РїСЂРѕС„РёР»СЊ"
+                    title_text: "настройки"
+                    subtitle_text: "профиль"
                     active: root.active_tab == "settings"
                     on_release: root.switch_tab("settings")
 
@@ -737,6 +752,3 @@
     transition: NoTransition()
     LoginScreen:
     DashboardScreen:
-
-
-

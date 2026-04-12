@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from kivy.app import App
 from kivy.properties import StringProperty
 from kivy.uix.boxlayout import BoxLayout
 

@@ -11,7 +11,7 @@ from driver_app.ui.widgets import MessageBubble
 
 
 class ChatPanel(BoxLayout):
-    """Driver <-> operator chat panel with polling and send support."""
+    """Driver <-> operator chat panel with polling and persistent history."""
 
     status_text = StringProperty("")
 
@@ -22,18 +22,12 @@ class ChatPanel(BoxLayout):
         self._poll_event = None
         self._known_ids: set[int] = set()
 
-    # ------------------------------------------------------------------
-    # Public API
-    # ------------------------------------------------------------------
-
     def setup(self, driver_id: str) -> None:
         self._driver_id = driver_id
         self._last_id = 0
         self._known_ids.clear()
         self._clear()
-        self.status_text = ""
-
-        self._append_system(f"Чат подключен: {driver_id}")
+        self.status_text = "История загружается..."
 
         def register_worker() -> None:
             try:
@@ -42,7 +36,7 @@ class ChatPanel(BoxLayout):
                 register_driver(driver_id)
             except Exception:
                 Clock.schedule_once(
-                    lambda *_: self._set_status("Сервер недоступен. Сообщения отправятся после восстановления."),
+                    lambda *_: self._set_status("Сервер недоступен. История появится после восстановления соединения."),
                     0,
                 )
 
@@ -65,7 +59,8 @@ class ChatPanel(BoxLayout):
         if msg_input is None:
             return
 
-        text = msg_input.text.strip()
+        draft_text = msg_input.text
+        text = draft_text.strip()
         if not text:
             self._set_status("Введите текст сообщения.")
             return
@@ -74,7 +69,6 @@ class ChatPanel(BoxLayout):
             self._set_status("Чат не инициализирован. Перезайдите в диалог.")
             return
 
-        msg_input.text = ""
         self._set_status("")
 
         def send_worker() -> None:
@@ -82,9 +76,20 @@ class ChatPanel(BoxLayout):
                 from driver_app.services.chat import send_message
 
                 message = send_message(self._driver_id, "driver", text)
-                Clock.schedule_once(lambda *_: self._append_from_payload(message), 0)
+
+                def on_success(*_args: object) -> None:
+                    current_input = self.ids.get("msg_input")
+                    if current_input is not None and current_input.text == draft_text:
+                        current_input.text = ""
+                    self._append_from_payload(message)
+                    self._set_status("")
+
+                Clock.schedule_once(on_success, 0)
             except Exception:
-                Clock.schedule_once(lambda *_: self._set_status("Ошибка отправки. Проверьте подключение."), 0)
+                Clock.schedule_once(
+                    lambda *_: self._set_status("Сообщение не отправлено. Проверьте подключение к backend."),
+                    0,
+                )
 
         Thread(target=send_worker, daemon=True).start()
 
@@ -94,10 +99,6 @@ class ChatPanel(BoxLayout):
             return
         msg_input.text = f"{msg_input.text}{symbol}"
         msg_input.focus = True
-
-    # ------------------------------------------------------------------
-    # Internal
-    # ------------------------------------------------------------------
 
     def _clear(self) -> None:
         box = self.ids.get("messages_list")
@@ -116,34 +117,38 @@ class ChatPanel(BoxLayout):
         try:
             from driver_app.services.chat import fetch_messages
 
-            msgs = fetch_messages(self._driver_id, since=self._last_id)
-            if msgs:
-                Clock.schedule_once(lambda *_: self._on_messages(msgs), 0)
+            messages = fetch_messages(self._driver_id, since=self._last_id)
+            Clock.schedule_once(lambda *_: self._on_messages(messages), 0)
         except Exception:
-            Clock.schedule_once(lambda *_: self._set_status("Сервер недоступен. Ожидаем восстановление..."), 0)
+            Clock.schedule_once(
+                lambda *_: self._set_status("Сервер недоступен. Ожидаем восстановление соединения..."),
+                0,
+            )
 
-    def _on_messages(self, msgs: list[dict[str, Any]]) -> None:
-        for msg in msgs:
-            self._append_from_payload(msg)
+    def _on_messages(self, messages: list[dict[str, Any]]) -> None:
+        if messages:
+            self._set_status("")
+        elif not self._known_ids:
+            self._set_status("История пуста. Напишите оператору первым.")
 
-    def _append_from_payload(self, msg: dict[str, Any]) -> None:
-        msg_id = int(msg.get("id", 0))
-        if msg_id and msg_id in self._known_ids:
+        for message in messages:
+            self._append_from_payload(message)
+
+    def _append_from_payload(self, message: dict[str, Any]) -> None:
+        message_id = int(message.get("id", 0))
+        if message_id and message_id in self._known_ids:
             return
 
-        if msg_id:
-            self._known_ids.add(msg_id)
-            self._last_id = max(self._last_id, msg_id)
+        if message_id:
+            self._known_ids.add(message_id)
+            self._last_id = max(self._last_id, message_id)
 
-        sender = str(msg.get("sender", "admin"))
-        text = str(msg.get("text", ""))
+        sender = str(message.get("sender", "admin"))
+        text = str(message.get("text", ""))
         if not text:
             return
 
         self._append_bubble(text=text, is_driver=(sender == "driver"))
-
-    def _append_system(self, text: str) -> None:
-        self._append_bubble(text=text, is_driver=False, system=True)
 
     def _append_bubble(self, text: str, is_driver: bool, system: bool = False) -> None:
         box = self.ids.get("messages_list")
@@ -152,7 +157,6 @@ class ChatPanel(BoxLayout):
 
         bubble = MessageBubble(text=text, is_driver=is_driver, system=system)
         box.add_widget(bubble)
-
         Clock.schedule_once(lambda *_: self._scroll_to_bottom(), 0.05)
 
     def _scroll_to_bottom(self) -> None:

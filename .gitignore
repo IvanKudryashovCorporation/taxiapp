@@ -16,7 +16,7 @@ bin/
 # Kivy
 .kivy/
 
-# Среды
+# Environments
 .env
 .venv
 venv/
@@ -29,6 +29,9 @@ venv/
 .DS_Store
 Thumbs.db
 
-# Временный main.py (создаётся build_android.sh)
+# Temporary launch file created by build_android.sh
 /main.py
+
+# Local cache and runtime data
 cache/
+backend/data/
