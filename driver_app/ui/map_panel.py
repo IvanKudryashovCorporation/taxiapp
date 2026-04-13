@@ -1,8 +1,14 @@
 from __future__ import annotations
 
+import logging
 import os
+import socket
 import struct
 import tempfile
+import traceback
+from concurrent.futures import TimeoutError, as_completed
+from time import time
+from urllib.parse import urlparse
 import zlib
 from threading import Lock, Thread
 
@@ -13,12 +19,133 @@ from kivy.properties import StringProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
+from requests import RequestException
 
 from driver_app.services.location import DEFAULT_LOCATION, GeoLocation, get_best_location
+
+
+def _parse_proxy_host_port(proxy_value: str) -> tuple[str, int] | None:
+    raw = proxy_value.strip()
+    if not raw:
+        return None
+
+    if "://" not in raw:
+        raw = f"http://{raw}"
+
+    parsed = urlparse(raw)
+    if not parsed.hostname or parsed.port is None:
+        return None
+
+    return parsed.hostname, parsed.port
+
+
+def _port_is_open(host: str, port: int, timeout: float = 0.25) -> bool:
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
+
+
+def _prepare_network_env() -> None:
+    proxy_keys = ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy")
+    local_targets = {"127.0.0.1", "localhost"}
+
+    for key in proxy_keys:
+        value = os.environ.get(key, "")
+        parsed = _parse_proxy_host_port(value)
+        if parsed is None:
+            continue
+
+        host, port = parsed
+        if host in local_targets and not _port_is_open(host, port):
+            os.environ.pop(key, None)
+
+    bypass_hosts = {
+        "127.0.0.1",
+        "localhost",
+        "tile.openstreetmap.org",
+        "a.tile.openstreetmap.org",
+        "b.tile.openstreetmap.org",
+        "c.tile.openstreetmap.org",
+        "ipapi.co",
+        "ipwho.is",
+        "nominatim.openstreetmap.org",
+    }
+
+    existing = set()
+    for key in ("NO_PROXY", "no_proxy"):
+        value = os.environ.get(key, "")
+        existing.update(part.strip() for part in value.split(",") if part.strip())
+
+    merged = ",".join(sorted(existing | bypass_hosts))
+    os.environ["NO_PROXY"] = merged
+    os.environ["no_proxy"] = merged
+
+
+class _SuppressMapMarkerDeprecationFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        message = record.getMessage()
+        if "Deprecated property" in message and ("allow_stretch" in message or "keep_ratio" in message):
+            return False
+        return True
+
+
+def _configure_runtime_logging() -> None:
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+    logging.getLogger("requests").setLevel(logging.WARNING)
+    logging.getLogger("kivy_garden.mapview").setLevel(logging.WARNING)
+
+    flt = _SuppressMapMarkerDeprecationFilter()
+    for logger_name in ("kivy", ""):
+        logger = logging.getLogger(logger_name)
+        if not any(isinstance(existing, _SuppressMapMarkerDeprecationFilter) for existing in logger.filters):
+            logger.addFilter(flt)
+
+
+def _patch_mapview_downloader_tracebacks() -> None:
+    try:
+        from kivy_garden.mapview import downloader as map_downloader
+    except Exception:
+        return
+
+    if getattr(map_downloader.Downloader, "_rassvet_quiet_patch", False):
+        return
+
+    def _safe_check_executor(self, _dt):  # type: ignore[no-untyped-def]
+        start = time()
+        try:
+            for future in as_completed(self._futures[:], 0):
+                self._futures.remove(future)
+                try:
+                    result = future.result()
+                except Exception as exc:
+                    # Ignore frequent tile network/proxy timeouts, but keep non-network tracebacks.
+                    if not isinstance(exc, RequestException):
+                        traceback.print_exc()
+                    continue
+
+                if result is None:
+                    continue
+                callback, args = result
+                callback(*args)
+
+                if time() - start > self.cap_time:
+                    break
+        except TimeoutError:
+            pass
+
+    map_downloader.Downloader._check_executor = _safe_check_executor
+    map_downloader.Downloader._rassvet_quiet_patch = True
+
+
+_prepare_network_env()
+_configure_runtime_logging()
 
 try:
     from kivy_garden.mapview import MapMarker, MapView
 
+    _patch_mapview_downloader_tracebacks()
     MAPVIEW_AVAILABLE = True
 except Exception:
     MAPVIEW_AVAILABLE = False
