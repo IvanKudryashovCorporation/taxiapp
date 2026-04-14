@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from kivy.app import App
 from kivy.properties import StringProperty
@@ -11,7 +11,7 @@ class LoginScreen(Screen):
     def submit_code(self) -> None:
         app = App.get_running_app()
         if app is None or not hasattr(app, "login_driver"):
-            self.status_text = "Сбой приложения. Перезапустите окно."
+            self.status_text = "Ошибка приложения. Перезапустите окно и попробуйте снова."
             return
 
         invite_code = self.ids.invite_input.text.strip()

@@ -1,861 +1,132 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ПРОФСОЮЗ "РАССВЕТ" | Админ-панель</title>
+  <title>Профсоюз "Рассвет" | Диспетчерская</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <style>
-    :root {
-      --yellow: #f2c838;
-      --navy: #061738;
-      --bg: #eef2f8;
-      --card: #f9fbff;
-      --muted: #6a7f9f;
-      --border: #d6deea;
-      --danger: #dc2626;
-      --ok: #22c55e;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background: linear-gradient(145deg, #e8edf6, #f7f9fc);
-      color: var(--navy);
-      font-family: "Segoe UI", Arial, sans-serif;
-      padding: 24px 18px;
-    }
-
-    .layout {
-      max-width: 1120px;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
-    .hero,
-    .card,
-    .overlay-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      box-shadow: 0 12px 30px rgba(10, 27, 56, 0.08);
-    }
-
-    .hero {
-      padding: 30px 28px;
-      text-align: center;
-    }
-
-    .hero-top {
-      letter-spacing: 4px;
-      text-transform: uppercase;
-      color: #435a7e;
-      font-size: 14px;
-      font-weight: 800;
-      margin-bottom: 12px;
-    }
-
-    .brand {
-      margin: 0;
-      font-size: clamp(38px, 5vw, 64px);
-      font-weight: 900;
-      line-height: 0.95;
-    }
-
-    .subtitle {
-      margin: 18px 0 14px;
-      color: var(--muted);
-      font-size: 24px;
-    }
-
-    .stripe {
-      margin: 0 auto;
-      width: 190px;
-      height: 14px;
-      border-radius: 999px;
-      background: repeating-linear-gradient(90deg, #2f374a 0 16px, #f2c838 16px 32px);
-      border: 1px solid rgba(20, 31, 50, 0.12);
-    }
-
-    .api {
-      color: var(--muted);
-      font-size: 13px;
-      margin-top: 10px;
-    }
-
-    #status-dot {
-      display: inline-block;
-      width: 10px;
-      height: 10px;
-      border-radius: 999px;
-      background: var(--danger);
-      margin-right: 6px;
-      vertical-align: middle;
-    }
-
-    code {
-      background: #f0f4fb;
-      color: #334d72;
-      border: 1px solid #d7dfeb;
-      border-radius: 6px;
-      padding: 2px 6px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 14px;
-    }
-
-    .card {
-      padding: 20px;
-    }
-
-    .label {
-      color: #3f5479;
-      font-size: 14px;
-      margin-bottom: 8px;
-      font-weight: 700;
-    }
-
-    .count {
-      color: var(--navy);
-      font-size: 42px;
-      font-weight: 900;
-      line-height: 1;
-      margin: 0;
-    }
-
-    .hint {
-      color: var(--muted);
-      margin-top: 8px;
-      font-size: 13px;
-    }
-
-    .events-title {
-      margin: 0 0 12px;
-      color: #304568;
-      font-size: 20px;
-    }
-
-    ul.events {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      display: grid;
-      gap: 8px;
-    }
-
-    ul.events li {
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 10px 12px;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      flex-wrap: wrap;
-      font-size: 14px;
-    }
-
-    .badge {
-      background: var(--yellow);
-      color: #1f2a3f;
-      border-radius: 8px;
-      font-weight: 700;
-      padding: 3px 9px;
-      text-transform: uppercase;
-      font-size: 12px;
-    }
-
-    .ev-name { color: #263a5d; font-weight: 600; }
-    .ev-time { color: var(--muted); font-size: 12px; margin-left: auto; }
-
-    .chat-setup {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .chat-toolbar {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .chat-toolbar select,
-    .chat-toolbar input {
-      padding: 8px 12px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      font-size: 14px;
-      background: #fff;
-      color: var(--navy);
-      outline: none;
-    }
-
-    .chat-toolbar select { min-width: 190px; }
-    .chat-toolbar input { flex: 1; min-width: 220px; }
-
-    button {
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      font-weight: 700;
-      font-size: 14px;
-      transition: transform .06s ease, opacity .06s ease;
-    }
-
-    button:active { transform: translateY(1px); }
-
-    .btn-main {
-      padding: 9px 16px;
-      background: var(--navy);
-      color: #fff;
-    }
-
-    .btn-soft {
-      padding: 9px 14px;
-      background: #dfe7f4;
-      color: #20375f;
-    }
-
-    .drivers-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      min-height: 38px;
-      padding-top: 2px;
-    }
-
-    .drivers-empty,
-    .status-row {
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    .driver-chip {
-      background: #edf2fb;
-      color: #17355f;
-      padding: 8px 12px;
-      border-radius: 999px;
-      border: 1px solid #d5deeb;
-    }
-
-    .driver-chip.active {
-      background: #0c234d;
-      color: #fff;
-      border-color: #0c234d;
-    }
-
-    .overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(4, 15, 34, 0.34);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-    }
-
-    .overlay.active {
-      display: flex;
-    }
-
-    .overlay-card {
-      width: min(760px, 100%);
-      padding: 16px;
-    }
-
-    .overlay-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-
-    .overlay-title {
-      font-size: 22px;
-      font-weight: 800;
-      color: var(--navy);
-    }
-
-    .overlay-body {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      min-height: 470px;
-    }
-
-    .chat-log {
-      flex: 1;
-      min-height: 340px;
-      max-height: 56vh;
-      overflow-y: auto;
-      padding: 10px;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      background: #f7f9fd;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .chat-empty {
-      color: var(--muted);
-      text-align: center;
-      margin: auto 0;
-      font-size: 15px;
-    }
-
-    .bubble {
-      max-width: 80%;
-      padding: 10px 12px;
-      border-radius: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      box-shadow: 0 6px 14px rgba(13, 37, 82, 0.08);
-    }
-
-    .bubble.driver {
-      align-self: flex-start;
-      background: #ffffff;
-      border: 1px solid #d7dfeb;
-      color: #102140;
-    }
-
-    .bubble.admin {
-      align-self: flex-end;
-      background: #0c234d;
-      color: #ffffff;
-    }
-
-    .bubble-who {
-      font-size: 12px;
-      font-weight: 700;
-      opacity: 0.82;
-    }
-
-    .bubble-text {
-      white-space: pre-wrap;
-      word-break: break-word;
-      font-size: 15px;
-    }
-
-    .bubble-time {
-      font-size: 11px;
-      opacity: 0.72;
-      align-self: flex-end;
-    }
-
-    .composer {
-      display: flex;
-      gap: 8px;
-      padding: 10px;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      background: #fff;
-    }
-
-    .emoji-btn {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      background: #e8eef8;
-      color: #183259;
-      font-size: 18px;
-      font-weight: 400;
-      padding: 0;
-      line-height: 1;
-    }
-
-    .chat-input {
-      flex: 1;
-      padding: 9px 12px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      font-size: 14px;
-      color: #0f274d;
-      outline: none;
-      background: #fff;
-    }
-
-    .send-btn {
-      padding: 9px 14px;
-      background: #0c234d;
-      color: #fff;
-    }
-
-    .send-btn:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-    }
-
-    .overlay-status {
-      min-height: 18px;
-      color: #51688f;
-      font-size: 12px;
-      padding-left: 4px;
-    }
-
-    .overlay-status.error {
-      color: var(--danger);
-    }
-
-    @media (max-width: 660px) {
-      body { padding: 12px; }
-      .overlay-body { min-height: 380px; height: 76vh; }
-      .chat-toolbar input { min-width: 120px; }
-    }
+    :root{--navy:#091935;--yellow:#f2c744;--bg:#eef3f8;--surface:rgba(255,255,255,.96);--surface2:#f7faff;--line:#dbe4f0;--text:#112240;--muted:#607590;--ok:#2f9b6d;--warn:#c08a12;--bad:#c74444;--shadow:0 16px 42px rgba(12,27,53,.08);--radius:24px;--radius-sm:16px}
+    *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at top left,rgba(242,199,68,.18),transparent 24%),linear-gradient(180deg,#f5f8fc 0%,var(--bg) 100%);color:var(--text);font-family:"Bahnschrift","Segoe UI Variable Text","Segoe UI",sans-serif}body{padding:18px}.page{max-width:1540px;margin:0 auto;display:grid;gap:14px}.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);backdrop-filter:blur(12px)}
+    .topbar{padding:18px 20px;display:grid;grid-template-columns:1.4fr .9fr;gap:16px;align-items:stretch}.brand-stack{display:flex;flex-direction:column;gap:10px}.eyebrow{display:inline-flex;align-items:center;width:fit-content;padding:8px 12px;border-radius:999px;background:#eef4ff;color:#3f5f92;font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:700}.brand-stack h1{margin:0;font-size:clamp(34px,4vw,58px);line-height:.94;color:var(--navy)}.brand-stack p{margin:0;max-width:760px;font-size:15px;line-height:1.5;color:var(--muted)}.stripe{width:188px;height:14px;border-radius:999px;background:repeating-linear-gradient(90deg,#2d364a 0 16px,#f3c93f 16px 32px)}
+    .status-grid,.signal-list,.stack,.details-grid{display:grid;gap:12px}.signal{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-radius:var(--radius-sm);background:var(--surface2);border:1px solid var(--line);font-size:14px}.signal strong{font-size:13px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.08em}.signal span:last-child{font-weight:700;color:var(--navy)}.signal.good{background:#effaf4;border-color:#d0eddc}.signal.good span:last-child{color:var(--ok)}.signal.warn{background:#fff8eb;border-color:#f0e0b9}.signal.warn span:last-child{color:var(--warn)}.signal.bad{background:#fff1f1;border-color:#f1d2d2}.signal.bad span:last-child{color:var(--bad)}
+    .stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}.stat{padding:16px;display:grid;gap:8px;min-height:124px}.stat span{color:var(--muted);font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:700}.stat b{font-size:clamp(28px,2vw,36px);line-height:1;color:var(--navy)}
+    .workspace{display:grid;grid-template-columns:340px minmax(0,1fr) 390px;gap:14px;align-items:start}.panel{padding:16px;display:grid;gap:12px}.panel-head{display:flex;align-items:end;justify-content:space-between;gap:12px}.panel-head h2,.panel h2{margin:0;color:var(--navy);font-size:20px;line-height:1.1}.micro{margin:0;color:var(--muted);font-size:13px;line-height:1.45}.form{display:grid;gap:10px}.row{display:flex;gap:10px;align-items:center}.row>*{min-width:0}
+    input,textarea,select,button{font:inherit}input,textarea,select{width:100%;border:1px solid var(--line);background:#fff;color:var(--text);padding:12px 14px;border-radius:16px;outline:none;transition:border-color .18s ease,box-shadow .18s ease}input:focus,textarea:focus,select:focus{border-color:#7ea0d5;box-shadow:0 0 0 3px rgba(80,118,190,.12)}textarea{min-height:86px;resize:vertical}.btn{border:none;border-radius:16px;padding:12px 16px;font-weight:800;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease}.btn:hover{transform:translateY(-1px)}.btn-main{background:var(--navy);color:#fff;box-shadow:0 12px 28px rgba(9,25,53,.2)}.btn-soft{background:#e8effa;color:var(--navy)}.btn-bad{background:#ffe4e4;color:#8f2323}.btn-warn{background:#fff2d8;color:#8a5b00}
+    .quote-box,.detail-box{background:var(--surface2);border:1px solid var(--line);border-radius:18px;padding:14px;color:var(--text);line-height:1.45}#map{height:560px;border-radius:22px;border:1px solid var(--line);overflow:hidden}.list{display:grid;gap:10px;max-height:352px;overflow:auto;padding-right:2px}.item{border:1px solid var(--line);border-radius:18px;padding:14px;background:#fff;display:grid;gap:8px;cursor:pointer;transition:border-color .18s ease,transform .15s ease,box-shadow .18s ease}.item:hover{transform:translateY(-1px);border-color:#9bb5da;box-shadow:0 10px 24px rgba(18,39,77,.07)}.item.active{border-color:#244b93;box-shadow:0 0 0 3px rgba(36,75,147,.1)}
+    .pill{display:inline-flex;align-items:center;padding:5px 10px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}.ok{background:#e4f7ec;color:#1f7a52}.soft{background:#edf3ff;color:#35558f}.warn{background:#fff1d9;color:#9b6100}.bad{background:#ffe0e0;color:#a12c2c}.mono{font-family:"Cascadia Mono","Consolas",monospace;font-size:13px}.chat{min-height:230px;max-height:330px;overflow:auto;border:1px solid var(--line);border-radius:18px;background:#f7faff;padding:12px;display:flex;flex-direction:column;gap:8px}.bubble{max-width:84%;padding:10px 12px;border-radius:18px;font-size:14px;line-height:1.45}.bubble.operator{align-self:flex-end;background:var(--navy);color:#fff}.bubble.driver{align-self:flex-start;background:#fff;border:1px solid var(--line);color:var(--text)}.compose{display:flex;gap:8px;align-items:stretch}.compose input{flex:1}.sticky{position:sticky;top:18px}
+    @media (max-width:1380px){.stats{grid-template-columns:repeat(3,minmax(0,1fr))}.workspace{grid-template-columns:1fr}.sticky{position:static}}@media (max-width:920px){body{padding:10px}.topbar{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}#map{height:420px}}
   </style>
 </head>
 <body>
-  <div class="layout">
-    <div class="hero">
-      <div class="hero-top">Сервис для администрации и операторов</div>
-      <h1 class="brand">ПРОФСОЮЗ<br>"РАССВЕТ"</h1>
-      <p class="subtitle">Единый вход в рабочую панель управления такси</p>
-      <div class="stripe"></div>
-      <p class="api">
-        <span id="status-dot"></span>
-        API: <code>/api/health</code> <code>/api/admin/state</code>
-        <code>/api/chat/register-driver</code> <code>/api/chat/send</code>
-      </p>
-    </div>
-
-    <div class="grid">
-      <section class="card">
-        <div class="label">Пинги водителей</div>
-        <p class="count" id="driver-pings">—</p>
-        <div class="hint">Обновляется автоматически</div>
-      </section>
-
-      <section class="card">
-        <div class="label">Пинги пассажиров</div>
-        <p class="count" id="passenger-pings">—</p>
-        <div class="hint">Обновляется автоматически</div>
-      </section>
-
-      <section class="card">
-        <h3 class="events-title">Последние события</h3>
-        <ul class="events" id="events-list">
-          <li><span class="ev-time">Загрузка…</span></li>
-        </ul>
-      </section>
-    </div>
-
-    <section class="card">
-      <h3 class="events-title">Чаты с водителями</h3>
-      <div class="chat-setup">
-        <div class="chat-toolbar">
-          <select id="driver-select" onchange="onDriverSelectChanged()">
-            <option value="">— выберите водителя —</option>
-          </select>
-          <input
-            id="driver-manual"
-            type="text"
-            placeholder="или введите ID (например DR-1024)"
-            onkeydown="if(event.key==='Enter'){addManualDriver()}"
-          />
-          <button class="btn-soft" onclick="addManualDriver()">Добавить</button>
-          <button class="btn-main" onclick="openChatOverlay()">Открыть чат</button>
+  <div class="page">
+    <section class="card topbar">
+      <div class="brand-stack">
+        <div class="eyebrow">Диспетчерская панель</div>
+        <h1>Профсоюз<br>"Рассвет"</h1>
+        <p>Операторы, водители, карта, заказы, жалобы и чаты собраны в одном рабочем окне. Панель рассчитана на быстрые решения без лишних переходов.</p>
+        <div class="stripe"></div>
+      </div>
+      <div class="status-grid">
+        <div class="signal-list">
+          <div class="signal warn" id="backend-pill"><strong>Backend</strong><span id="backend">подключение...</span></div>
+          <div class="signal warn" id="ws-pill"><strong>WebSocket</strong><span id="ws">подключение...</span></div>
         </div>
+        <div class="quote-box"><strong>Рабочая зона оператора</strong><br>Здесь можно создать водителя, оформить заказ по звонку, назначить машину, просмотреть жалобы и вести чат с линией в реальном времени.</div>
+      </div>
+    </section>
 
-        <div class="drivers-list" id="drivers-list"></div>
-        <div class="status-row" id="chat-status-row">Выберите водителя или добавьте ID вручную.</div>
+    <section class="stats" id="stats"></section>
+
+    <section class="workspace">
+      <div class="stack sticky">
+        <section class="card panel">
+          <div class="panel-head"><div><h2>Новый водитель</h2><p class="micro">Оператор создает профиль, система генерирует invite code для входа в приложение водителя.</p></div></div>
+          <form id="driver-form" class="form">
+            <input name="full_name" placeholder="ФИО" required />
+            <input name="phone" placeholder="Телефон" />
+            <textarea name="passport_data" placeholder="Паспортные данные"></textarea>
+            <div class="row"><input name="vehicle_make" placeholder="Марка" /><input name="vehicle_model" placeholder="Модель" /></div>
+            <div class="row"><input name="vehicle_plate" placeholder="Госномер" /><input name="vehicle_color" placeholder="Цвет" /></div>
+            <select name="service_class"><option value="econom">Эконом</option><option value="comfort">Комфорт</option><option value="business">Бизнес</option></select>
+            <button class="btn btn-main" type="submit">Создать водителя</button>
+          </form>
+          <div class="quote-box" id="driver-result">После создания здесь появятся public ID и пригласительный код водителя.</div>
+        </section>
+
+        <section class="card panel">
+          <div class="panel-head"><div><h2>Заказ по звонку</h2><p class="micro">Оформление заказа оператором вручную с мгновенным расчетом стоимости.</p></div></div>
+          <form id="order-form" class="form">
+            <input name="passenger_phone" placeholder="Телефон пассажира" required />
+            <input name="pickup_address" placeholder="Откуда" required />
+            <input name="dropoff_address" placeholder="Куда" required />
+            <textarea name="comment" placeholder="Комментарий для водителя"></textarea>
+            <div class="row"><input name="passengers_count" type="number" min="1" max="8" value="1" /><select name="car_class"><option value="econom">Эконом</option><option value="comfort">Комфорт</option><option value="business">Бизнес</option></select></div>
+            <div class="row"><select name="payment_method"><option value="cash">Наличные</option><option value="card">Карта</option><option value="sbp">СБП</option></select><input name="promo_code" placeholder="Промокод" /></div>
+            <div class="row"><button class="btn btn-soft" type="button" onclick="quoteOrder()">Рассчитать</button><button class="btn btn-main" type="submit">Создать заказ</button></div>
+          </form>
+          <div class="quote-box" id="quote">Цена появится после расчета маршрута.</div>
+          <div class="micro" id="order-result"></div>
+        </section>
+      </div>
+
+      <div class="stack">
+        <section class="card panel">
+          <div class="panel-head"><div><h2>Карта линии</h2><p class="micro">Онлайн-водители, активные заказы и выбранный маршрут отображаются здесь.</p></div><button class="btn btn-soft" onclick="refreshAll()">Обновить</button></div>
+          <div id="map"></div>
+        </section>
+        <section class="card panel">
+          <div class="panel-head"><div><h2>Лента заказов</h2><p class="micro">Новые, активные и завершенные поездки с быстрым переходом в детали.</p></div></div>
+          <div class="list" id="orders"></div>
+        </section>
+      </div>
+
+      <div class="stack sticky">
+        <section class="card panel"><div class="panel-head"><div><h2>Водители</h2><p class="micro">Парк, статусы, invite code и быстрый переход в чат с оператором.</p></div></div><div class="list" id="drivers"></div></section>
+        <section class="card panel"><div class="panel-head"><div><h2>Детали заказа</h2><p class="micro">Назначение, завершение, отмена и ручное управление заказом.</p></div></div><div id="details" class="details-grid micro">Выберите заказ в ленте или на карте.</div></section>
+        <section class="card panel"><div class="panel-head"><div><h2>Чат с водителем</h2><p class="micro">Операторская переписка хранится и доступна при повторном подключении.</p></div></div><select id="chat-driver"></select><div class="chat" id="chat"></div><div class="compose"><input id="chat-input" placeholder="Сообщение водителю" /><button class="btn btn-main" onclick="sendChat()">Отправить</button></div><div class="micro" id="chat-status">Выберите водителя для переписки.</div></section>
+        <section class="card panel"><div class="panel-head"><div><h2>Жалобы и отзывы</h2><p class="micro">Негативные оценки и причины жалоб после завершения поездок.</p></div></div><div class="list" id="complaints"></div></section>
       </div>
     </section>
   </div>
 
-  <div class="overlay" id="chat-overlay" onclick="if(event.target===this)closeChatOverlay()">
-    <section class="overlay-card" role="dialog" aria-modal="true" aria-label="Чат с водителем">
-      <header class="overlay-head">
-        <div class="overlay-title" id="overlay-title">Чат с водителем</div>
-        <button class="btn-soft" onclick="closeChatOverlay()">Закрыть</button>
-      </header>
-
-      <div class="overlay-body">
-        <div class="chat-log" id="chat-log">
-          <div class="chat-empty">Выберите водителя, чтобы начать чат.</div>
-        </div>
-
-        <div class="composer">
-          <button class="emoji-btn" onclick="insertEmoji('👍')" title="Вставить 👍">👍</button>
-          <button class="emoji-btn" onclick="insertEmoji('🚕')" title="Вставить 🚕">🚕</button>
-          <input
-            id="chat-input"
-            class="chat-input"
-            type="text"
-            placeholder="Сообщение водителю"
-            onkeydown="if(event.key==='Enter'){sendAdmin()}"
-          />
-          <button id="send-btn" class="send-btn" onclick="sendAdmin()">Отправить</button>
-        </div>
-
-        <div class="overlay-status" id="overlay-status"></div>
-      </div>
-    </section>
-  </div>
-
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script>
-    let currentDriver = "";
-    let knownDrivers = [];
-    let chatSince = 0;
-    let chatLog = [];
-    let overlayOpen = false;
-
-    function normalizeDriverId(raw) {
-      return (raw || "").trim().toUpperCase();
-    }
-
-    function setStatusRow(text) {
-      document.getElementById("chat-status-row").textContent = text;
-    }
-
-    function setOverlayStatus(text, isError = false) {
-      const element = document.getElementById("overlay-status");
-      element.textContent = text || "";
-      element.classList.toggle("error", Boolean(isError));
-    }
-
-    function updateOverlayTitle() {
-      const title = document.getElementById("overlay-title");
-      title.textContent = currentDriver ? `Чат с водителем ${currentDriver}` : "Чат с водителем";
-    }
-
-    function formatTime(iso) {
-      if (!iso) {
-        return "";
-      }
-
-      const date = new Date(iso);
-      if (Number.isNaN(date.getTime())) {
-        return String(iso).slice(11, 16) + " UTC";
-      }
-
-      return date.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
-    }
-
-    async function refreshStats() {
-      try {
-        const response = await fetch("/api/admin/state");
-        const data = await response.json();
-
-        document.getElementById("driver-pings").textContent = data.driver_pings;
-        document.getElementById("passenger-pings").textContent = data.passenger_pings;
-
-        const events = [...(data.events || [])].reverse().slice(0, 20);
-        const list = document.getElementById("events-list");
-
-        if (events.length === 0) {
-          list.innerHTML = "<li><span class='ev-time'>Событий пока нет</span></li>";
-        } else {
-          list.innerHTML = events.map((event) => `
-            <li>
-              <span class="badge">${escapeHtml(event.app_type)}</span>
-              <span class="ev-name">${escapeHtml(event.app_name)}</span>
-              <span class="ev-time">${formatTime(event.time_utc)}</span>
-            </li>
-          `).join("");
-        }
-
-        document.getElementById("status-dot").style.background = "#22c55e";
-      } catch {
-        document.getElementById("status-dot").style.background = "#dc2626";
-      }
-    }
-
-    async function refreshDrivers() {
-      try {
-        const response = await fetch("/api/chat/drivers");
-        const data = await response.json();
-        const fromServer = Array.isArray(data.drivers) ? data.drivers : [];
-        knownDrivers = [...new Set(fromServer.map(normalizeDriverId).filter(Boolean))];
-        renderDriversUI();
-
-        if (!currentDriver && knownDrivers.length > 0) {
-          selectDriver(knownDrivers[0], false);
-        } else if (currentDriver && !knownDrivers.includes(currentDriver)) {
-          knownDrivers.push(currentDriver);
-          knownDrivers.sort();
-          renderDriversUI();
-        }
-      } catch {
-        setStatusRow("Не удалось обновить список водителей.");
-      }
-    }
-
-    function renderDriversUI() {
-      const select = document.getElementById("driver-select");
-      const previous = currentDriver;
-      select.innerHTML = "<option value=''>— выберите водителя —</option>";
-
-      knownDrivers.forEach((driverId) => {
-        const option = document.createElement("option");
-        option.value = driverId;
-        option.textContent = driverId;
-        if (driverId === previous) {
-          option.selected = true;
-        }
-        select.appendChild(option);
-      });
-
-      const list = document.getElementById("drivers-list");
-      list.innerHTML = "";
-
-      if (knownDrivers.length === 0) {
-        const empty = document.createElement("div");
-        empty.className = "drivers-empty";
-        empty.textContent = "Водителей пока нет. Они появятся после входа в приложение водителя.";
-        list.appendChild(empty);
-        return;
-      }
-
-      knownDrivers.forEach((driverId) => {
-        const chip = document.createElement("button");
-        chip.className = `driver-chip${driverId === currentDriver ? " active" : ""}`;
-        chip.textContent = driverId;
-        chip.onclick = () => selectDriver(driverId, true);
-        list.appendChild(chip);
-      });
-    }
-
-    function onDriverSelectChanged() {
-      const selected = normalizeDriverId(document.getElementById("driver-select").value);
-      if (selected) {
-        selectDriver(selected, false);
-      }
-    }
-
-    async function addManualDriver() {
-      const input = document.getElementById("driver-manual");
-      const driverId = normalizeDriverId(input.value);
-      if (!driverId) {
-        setStatusRow("Введите ID водителя, например DR-1024.");
-        return;
-      }
-
-      input.value = "";
-
-      try {
-        await fetch("/api/chat/register-driver", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ driver_id: driverId, source: "admin_site" })
-        });
-
-        if (!knownDrivers.includes(driverId)) {
-          knownDrivers.push(driverId);
-          knownDrivers.sort();
-        }
-
-        renderDriversUI();
-        selectDriver(driverId, true);
-        setStatusRow(`Водитель ${driverId} добавлен.`);
-      } catch {
-        setStatusRow("Не удалось добавить водителя. Проверьте backend.");
-      }
-    }
-
-    function selectDriver(driverId, openOverlayAfterSelect) {
-      const normalized = normalizeDriverId(driverId);
-      if (!normalized) {
-        return;
-      }
-
-      currentDriver = normalized;
-      if (!knownDrivers.includes(normalized)) {
-        knownDrivers.push(normalized);
-        knownDrivers.sort();
-      }
-
-      chatSince = 0;
-      chatLog = [];
-      renderDriversUI();
-      updateOverlayTitle();
-      renderChat();
-      setStatusRow(`Выбран водитель: ${currentDriver}`);
-      setOverlayStatus("");
-
-      if (openOverlayAfterSelect) {
-        openChatOverlay();
-      }
-
-      fetchChat(true);
-    }
-
-    function openChatOverlay() {
-      if (!currentDriver) {
-        setStatusRow("Сначала выберите водителя.");
-        return;
-      }
-
-      overlayOpen = true;
-      updateOverlayTitle();
-      document.getElementById("chat-overlay").classList.add("active");
-      renderChat();
-      fetchChat(true);
-      setTimeout(() => document.getElementById("chat-input").focus(), 50);
-    }
-
-    function closeChatOverlay() {
-      overlayOpen = false;
-      document.getElementById("chat-overlay").classList.remove("active");
-      setOverlayStatus("");
-    }
-
-    async function fetchChat(forceRender = false) {
-      if (!currentDriver) {
-        return;
-      }
-
-      try {
-        const response = await fetch(`/api/chat/messages/${encodeURIComponent(currentDriver)}?since=${chatSince}`);
-        const data = await response.json();
-        const messages = Array.isArray(data.messages) ? data.messages : [];
-
-        if (messages.length > 0) {
-          chatLog.push(...messages);
-          chatSince = Math.max(chatSince, ...messages.map((message) => Number(message.id || 0)));
-          renderChat();
-        } else if (forceRender) {
-          renderChat();
-        }
-
-        setOverlayStatus("");
-      } catch {
-        if (overlayOpen) {
-          setOverlayStatus("Сервер недоступен. Не удалось загрузить чат.", true);
-        }
-      }
-    }
-
-    function renderChat() {
-      const log = document.getElementById("chat-log");
-      log.innerHTML = "";
-
-      if (!currentDriver) {
-        const empty = document.createElement("div");
-        empty.className = "chat-empty";
-        empty.textContent = "Сначала выберите водителя.";
-        log.appendChild(empty);
-        return;
-      }
-
-      if (chatLog.length === 0) {
-        const empty = document.createElement("div");
-        empty.className = "chat-empty";
-        empty.textContent = "История пуста. Напишите первым.";
-        log.appendChild(empty);
-        return;
-      }
-
-      chatLog.slice(-120).forEach((message) => {
-        const sender = message.sender === "admin" ? "admin" : "driver";
-        const bubble = document.createElement("div");
-        bubble.className = `bubble ${sender}`;
-
-        const who = document.createElement("span");
-        who.className = "bubble-who";
-        who.textContent = sender === "admin" ? "оператор" : `${message.driver_id}`;
-
-        const text = document.createElement("div");
-        text.className = "bubble-text";
-        text.textContent = String(message.text || "");
-
-        const time = document.createElement("span");
-        time.className = "bubble-time";
-        time.textContent = formatTime(message.time_utc);
-
-        bubble.appendChild(who);
-        bubble.appendChild(text);
-        bubble.appendChild(time);
-        log.appendChild(bubble);
-      });
-
-      log.scrollTop = log.scrollHeight;
-    }
-
-    async function sendAdmin() {
-      const input = document.getElementById("chat-input");
-      const button = document.getElementById("send-btn");
-      const text = input.value.trim();
-
-      if (!currentDriver) {
-        setOverlayStatus("Выберите водителя перед отправкой.", true);
-        return;
-      }
-
-      if (!text) {
-        return;
-      }
-
-      button.disabled = true;
-
-      try {
-        const response = await fetch("/api/chat/send", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            driver_id: currentDriver,
-            sender: "admin",
-            text,
-          })
-        });
-
-        if (!response.ok) {
-          throw new Error("send_failed");
-        }
-
-        input.value = "";
-        await fetchChat(true);
-        setOverlayStatus("");
-      } catch {
-        setOverlayStatus("Сообщение не отправлено. Проверьте соединение.", true);
-      } finally {
-        button.disabled = false;
-        input.focus();
-      }
-    }
-
-    function insertEmoji(emoji) {
-      const input = document.getElementById("chat-input");
-      input.value += emoji;
-      input.focus();
-    }
-
-    function escapeHtml(value) {
-      return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#39;");
-    }
-
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && overlayOpen) {
-        closeChatOverlay();
-      }
-    });
-
-    refreshStats();
-    refreshDrivers();
-    renderChat();
-
-    setInterval(refreshStats, 5000);
-    setInterval(refreshDrivers, 10000);
-    setInterval(() => {
-      if (currentDriver) {
-        fetchChat(false);
-      }
-    }, 2500);
+    const S={stats:null,orders:[],drivers:[],complaints:[],selected:null,chatDriver:"",chat:[],ws:null};
+    const map=L.map("map").setView([55.7558,37.6176],11);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"&copy; OpenStreetMap contributors"}).addTo(map);
+    const layers={drivers:L.layerGroup().addTo(map),orders:L.layerGroup().addTo(map),route:L.layerGroup().addTo(map)};
+    const esc=(v)=>String(v||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+    const money=(v)=>`${Number(v||0).toLocaleString("ru-RU",{maximumFractionDigits:0})} ₽`;
+    const at=(v)=>v?new Date(v).toLocaleString("ru-RU",{hour:"2-digit",minute:"2-digit",day:"2-digit",month:"2-digit"}):"—";
+    const statusName=(s)=>({created:"Новый",searching_driver:"Ищет водителя",accepted:"Принят",driver_on_the_way:"В пути",driver_nearby_leave_now:"Подъезжает",arrived:"На месте",ride_in_progress:"Поездка",completed:"Завершен",cancelled:"Отменен"}[s]||s);
+    const statusCls=(s)=>s==="completed"?"ok":s==="cancelled"?"bad":(s==="searching_driver"||s==="driver_nearby_leave_now")?"warn":"soft";
+    const humanPayment=(p)=>({cash:"Наличные",card:"Карта",sbp:"СБП"}[p]||p||"Оплата");
+    const setSignal=(id,state,text)=>{const n=document.getElementById(id);n.className=`signal ${state}`;n.querySelector("span:last-child").textContent=text;};
+    async function api(url,opt={}){const r=await fetch(url,{headers:{"Content-Type":"application/json"},...opt});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.detail||d.message||`HTTP ${r.status}`);return d;}
+    function renderStats(){const x=S.stats||{};const items=[["Заказов за день",x.orders_today||0],["Отмен за день",x.cancelled_today||0],["Активных заказов",x.active_orders||0],["Онлайн-водителей",x.online_drivers||0],["Средний чек",money(x.avg_check)],["Выручка за день",money(x.revenue_today)]];document.getElementById("stats").innerHTML=items.map(([l,v])=>`<div class="card stat"><span>${l}</span><b>${v}</b></div>`).join("");}
+    function renderDrivers(){const box=document.getElementById("drivers"),sel=document.getElementById("chat-driver");sel.innerHTML='<option value="">Выберите водителя</option>'+S.drivers.map((d)=>`<option value="${d.public_id}">${d.public_id} — ${esc(d.full_name)}</option>`).join("");if(S.chatDriver)sel.value=S.chatDriver;box.innerHTML=S.drivers.map((d)=>`<div class="item ${S.chatDriver===d.public_id?"active":""}" onclick="pickDriver('${d.public_id}')"><div class="row" style="justify-content:space-between;"><strong>${esc(d.full_name)}</strong><span class="pill ${d.is_online?"ok":"soft"}">${d.is_online?"online":"offline"}</span></div><div class="micro mono">${esc(d.public_id)} • ${esc(d.invite_code)}</div><div>${esc([d.vehicle_make,d.vehicle_model,d.vehicle_plate].filter(Boolean).join(" • ")||"Машина пока не заполнена")}</div><div class="row" style="justify-content:space-between;"><span class="micro">Рейтинг: ${d.rating}</span><button class="btn btn-bad" onclick="event.stopPropagation();banDriver('${d.public_id}')">Бан</button></div></div>`).join("");}
+    function renderOrders(){document.getElementById("orders").innerHTML=S.orders.map((o)=>`<div class="item ${S.selected&&S.selected.public_id===o.public_id?"active":""}" onclick="pickOrder('${o.public_id}')"><div class="row" style="justify-content:space-between;"><strong>${o.public_id}</strong><span class="pill ${statusCls(o.status)}">${statusName(o.status)}</span></div><div>${esc(o.pickup_address)}</div><div>${esc(o.dropoff_address)}</div><div class="row" style="justify-content:space-between;"><span class="micro">${esc(o.passenger_phone||"пассажир")}</span><strong>${money(o.fare_total)}</strong></div><div class="micro">${o.driver_public_id?`Водитель: ${esc(o.driver_public_id)}`:"Водитель еще не назначен"}</div></div>`).join("");}
+    function renderComplaints(){const box=document.getElementById("complaints");if(!S.complaints.length){box.innerHTML='<div class="micro">Жалоб пока нет.</div>';return;}box.innerHTML=S.complaints.map((c)=>`<div class="item"><div class="row" style="justify-content:space-between;"><strong>${esc(c.order_public_id)}</strong><span class="pill ${Number(c.rating)<=2?"bad":"soft"}">${c.rating}/5</span></div><div>${esc(c.driver_full_name)} • ${esc(c.driver_public_id)}</div><div class="micro">${esc(c.passenger_phone)}</div><div>${esc((c.complaint_reason||"Без причины")+(c.complaint_text?`: ${c.complaint_text}`:""))}</div></div>`).join("");}
+    function renderDetails(){const o=S.selected,box=document.getElementById("details");if(!o){box.innerHTML='Выберите заказ в ленте или на карте.';return;}const opts='<option value="">Выберите водителя</option>'+S.drivers.map((d)=>`<option value="${d.id}" ${Number(o.driver_id)===Number(d.id)?"selected":""}>${d.public_id} — ${esc(d.full_name)}</option>`).join("");box.innerHTML=`<div class="detail-box"><strong>${o.public_id}</strong><br>${statusName(o.status)}</div><div class="detail-box"><strong>${money(o.fare_total)}</strong><br>${humanPayment(o.payment_method)} • ${esc(o.car_class||"econom")}</div><div class="detail-box"><strong>Маршрут</strong><br>${esc(o.pickup_address)}<br>↓<br>${esc(o.dropoff_address)}</div><div class="detail-box"><strong>Комментарий</strong><br>${esc(o.comment||"—")}</div><div class="detail-box"><strong>Время</strong><br>Создан: ${at(o.created_at)}<br>Принят: ${at(o.accepted_at)}</div><div class="row"><select id="assign-driver">${opts}</select><button class="btn btn-main" onclick="assignOrder()">Назначить</button></div><div class="row"><button class="btn btn-soft" onclick="unassignOrder()">Снять</button><button class="btn btn-warn" onclick="completeOrder()">Завершить</button><button class="btn btn-bad" onclick="cancelOrder()">Отменить</button></div>`;}
+    function renderChat(){const box=document.getElementById("chat");document.getElementById("chat-status").textContent=S.chatDriver?`Чат с ${S.chatDriver}`:"Выберите водителя для переписки.";if(!S.chatDriver){box.innerHTML='<div class="micro">Нет выбранного водителя.</div>';return;}if(!S.chat.length){box.innerHTML='<div class="micro">История пока пустая.</div>';return;}box.innerHTML=S.chat.map((m)=>`<div class="bubble ${m.sender_type==="driver"?"driver":"operator"}">${esc(m.text)}<br><small>${m.sender_type==="driver"?S.chatDriver:"оператор"} • ${at(m.created_at)}</small></div>`).join("");box.scrollTop=box.scrollHeight;}
+    function drawMap(){layers.drivers.clearLayers();layers.orders.clearLayers();layers.route.clearLayers();S.drivers.forEach((d)=>{if(d.current_lat==null||d.current_lon==null)return;const icon=L.divIcon({className:"",html:'<div style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:#f2c744;border:2px solid #091935;font-size:16px">🚕</div>',iconSize:[30,30],iconAnchor:[15,15]});L.marker([d.current_lat,d.current_lon],{icon}).bindPopup(`<strong>${esc(d.full_name)}</strong><br>${esc(d.public_id)}`).addTo(layers.drivers);});S.orders.forEach((o)=>{const color=o.status==="completed"?"#2f9b6d":o.status==="cancelled"?"#c74444":(o.status==="accepted"||o.status==="ride_in_progress")?"#0b5ed7":"#12315e";const marker=L.circleMarker([o.pickup_lat,o.pickup_lon],{radius:10,color,weight:2,fillColor:color,fillOpacity:.9}).bindPopup(`<strong>${esc(o.public_id)}</strong><br>${esc(o.pickup_address)}<br>→ ${esc(o.dropoff_address)}`);marker.on("click",()=>pickOrder(o.public_id));marker.addTo(layers.orders);});if(S.selected){const o=S.selected,c=o.route_geometry&&o.route_geometry.coordinates;if(Array.isArray(c)&&c.length>1){const pts=c.map((p)=>[p[1],p[0]]);L.polyline(pts,{color:"#0b5ed7",weight:4}).addTo(layers.route);map.fitBounds(L.latLngBounds(pts),{padding:[20,20]});}else{const pts=[[o.pickup_lat,o.pickup_lon],[o.dropoff_lat,o.dropoff_lon]];L.polyline(pts,{color:"#0b5ed7",weight:4}).addTo(layers.route);map.fitBounds(L.latLngBounds(pts),{padding:[20,20]});}}}
+    function pickOrder(id){S.selected=S.orders.find((o)=>o.public_id===id)||null;renderOrders();renderDetails();drawMap();}
+    async function pickDriver(id){S.chatDriver=id;renderDrivers();await loadChat();}
+    async function loadChat(){if(!S.chatDriver){S.chat=[];renderChat();return;}const d=await api(`/api/operator/chat/${encodeURIComponent(S.chatDriver)}?since=0`);S.chat=d.messages||[];renderChat();}
+    async function refreshAll(){try{const [dashboard,drivers,orders,complaints]=await Promise.all([api('/api/operator/dashboard'),api('/api/operator/drivers'),api('/api/operator/orders'),api('/api/operator/complaints')]);S.stats=dashboard;S.drivers=drivers.items||[];S.orders=orders.items||[];S.complaints=complaints.items||[];if(S.selected)S.selected=S.orders.find((o)=>o.public_id===S.selected.public_id)||null;renderStats();renderDrivers();renderOrders();renderComplaints();renderDetails();drawMap();setSignal("backend-pill","good","подключен");}catch(error){console.error(error);setSignal("backend-pill","bad",error.message);}}
+    async function banDriver(id){try{await api(`/api/operator/drivers/${encodeURIComponent(id)}/ban`,{method:'POST'});await refreshAll();}catch(error){alert(error.message);}}
+    async function assignOrder(){if(!S.selected)return;const driverId=Number(document.getElementById('assign-driver').value);if(!driverId){alert('Выберите водителя');return;}try{await api(`/api/operator/orders/${encodeURIComponent(S.selected.public_id)}/assign`,{method:'POST',body:JSON.stringify({driver_id:driverId})});await refreshAll();}catch(error){alert(error.message);}}
+    async function unassignOrder(){if(!S.selected)return;try{await api(`/api/operator/orders/${encodeURIComponent(S.selected.public_id)}/unassign`,{method:'POST'});await refreshAll();}catch(error){alert(error.message);}}
+    async function completeOrder(){if(!S.selected)return;try{await api(`/api/operator/orders/${encodeURIComponent(S.selected.public_id)}/complete`,{method:'POST'});await refreshAll();}catch(error){alert(error.message);}}
+    async function cancelOrder(){if(!S.selected)return;const reason=prompt('Причина отмены:','Отменено оператором')||'Отменено оператором';try{await api(`/api/operator/orders/${encodeURIComponent(S.selected.public_id)}/cancel`,{method:'POST',body:JSON.stringify({reason})});await refreshAll();}catch(error){alert(error.message);}}
+    async function quoteOrder(){const form=new FormData(document.getElementById('order-form'));const payload=Object.fromEntries(form.entries());payload.passengers_count=Number(payload.passengers_count||1);try{const quote=await api('/api/operator/orders/quote',{method:'POST',body:JSON.stringify(payload)});document.getElementById('quote').innerHTML=`<strong>${money(quote.fare_total)}</strong><br>Дистанция: ${Math.round((quote.route_distance_meters||0)/100)/10} км<br>Время: ${Math.round((quote.route_duration_seconds||0)/60)} мин<br>Комиссия: ${money(quote.service_commission_amount)}`;}catch(error){document.getElementById('quote').textContent=error.message;}}
+    async function sendChat(){const input=document.getElementById('chat-input');const text=input.value.trim();if(!S.chatDriver){alert('Выберите водителя');return;}if(!text)return;try{await api(`/api/operator/chat/${encodeURIComponent(S.chatDriver)}`,{method:'POST',body:JSON.stringify({driver_public_id:S.chatDriver,text})});input.value='';await loadChat();}catch(error){document.getElementById('chat-status').textContent=error.message;}}
+    document.getElementById('chat-driver').addEventListener('change',(event)=>pickDriver(event.target.value));
+    document.getElementById('driver-form').addEventListener('submit',async(event)=>{event.preventDefault();const payload=Object.fromEntries(new FormData(event.target).entries());try{const driver=await api('/api/operator/drivers',{method:'POST',body:JSON.stringify(payload)});document.getElementById('driver-result').innerHTML=`Создан водитель <strong>${esc(driver.full_name)}</strong><br>ID: <span class="mono">${esc(driver.public_id)}</span><br>Invite code: <span class="mono">${esc(driver.invite_code)}</span>`;event.target.reset();await refreshAll();}catch(error){document.getElementById('driver-result').textContent=error.message;}});
+    document.getElementById('order-form').addEventListener('submit',async(event)=>{event.preventDefault();const payload=Object.fromEntries(new FormData(event.target).entries());payload.passengers_count=Number(payload.passengers_count||1);try{const order=await api('/api/operator/orders',{method:'POST',body:JSON.stringify(payload)});document.getElementById('order-result').innerHTML=`Создан заказ <strong>${order.public_id}</strong>`;event.target.reset();await refreshAll();pickOrder(order.public_id);}catch(error){document.getElementById('order-result').textContent=error.message;}});
+    function connectWs(){const protocol=location.protocol==='https:'?'wss':'ws';S.ws=new WebSocket(`${protocol}://${location.host}/ws?role=operator`);S.ws.onopen=()=>setSignal('ws-pill','good','подключен');S.ws.onclose=()=>{setSignal('ws-pill','warn','переподключение...');setTimeout(connectWs,1500);};S.ws.onerror=()=>setSignal('ws-pill','bad','ошибка канала');S.ws.onmessage=async(event)=>{const message=JSON.parse(event.data);if(['order.created','order.accepted','order.updated','order.cancelled','order.completed','driver.presence','driver.location','dashboard.stats'].includes(message.type))refreshAll();if(message.type==='chat.message'&&S.chatDriver){const driverId=message.payload?.sender_id==='operator'?message.payload?.receiver_id:message.payload?.sender_id;if(driverId===S.chatDriver)loadChat();}};}
+    refreshAll();connectWs();setInterval(refreshAll,15000);
   </script>
 </body>
 </html>

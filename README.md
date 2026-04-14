@@ -16,21 +16,33 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-## 2) Run backend (admin web site)
+## 2) Start PostgreSQL
+
+Quick local option via Docker:
 
 ```powershell
+docker compose up -d postgres
+```
+
+Default local connection used by scripts:
+`postgresql://taxiapp:taxiapp@127.0.0.1:5432/taxiapp`
+
+## 3) Run backend (admin web site)
+
+```powershell
+$env:DATABASE_URL="postgresql://taxiapp:taxiapp@127.0.0.1:5432/taxiapp"
 python -m uvicorn backend.main:app --reload
 ```
 
 Admin site URL: `http://127.0.0.1:8000/`
 
-## 3) Run desktop driver app (in another terminal)
+## 4) Run desktop driver app (in another terminal)
 
 ```powershell
 python driver_app/app.py
 ```
 
-## 4) Run desktop passenger app (in another terminal)
+## 5) Run desktop passenger app (in another terminal)
 
 ```powershell
 python passenger_app/app.py
@@ -52,3 +64,6 @@ Then open admin site and you will see counters/events update.
 .\start_driver_app.ps1
 .\start_passenger_app.ps1
 ```
+
+`start_backend.ps1` and bat launchers in `start/` set `DATABASE_URL` automatically if it is not defined (and try `docker compose up -d postgres` when Docker is installed).
+They also run `python backend/setup_db.py` before backend startup to auto-create user/database/tables.

@@ -1,1 +1,1 @@
-﻿"""Screen implementations for driver app."""
+"""Screen implementations for driver app."""

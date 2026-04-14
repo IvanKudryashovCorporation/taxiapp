@@ -1,16 +1,24 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
-from driver_app.config import APP_NAME, APP_TYPE, BACKEND_URL
-from shared.api_client import send_ping
+from urllib.parse import urlencode
+
+from driver_app.config import BACKEND_URL
+from shared.backend_client import BackendClient
 
 
-def ping_driver(invite_code: str) -> tuple[bool, str]:
-    try:
-        send_ping(
-            base_url=BACKEND_URL,
-            app_type=APP_TYPE,
-            app_name=f"{APP_NAME}:{invite_code}",
-        )
-        return True, ""
-    except Exception as exc:  # pragma: no cover - network/UI integration path
-        return False, str(exc)
+def create_client(token: str = "") -> BackendClient:
+    return BackendClient(BACKEND_URL, token=token)
+
+
+def make_ws_url(token: str) -> str:
+    base = BACKEND_URL.rstrip("/")
+    if base.startswith("https://"):
+        prefix = "wss://"
+        host = base[len("https://") :]
+    elif base.startswith("http://"):
+        prefix = "ws://"
+        host = base[len("http://") :]
+    else:
+        prefix = "ws://"
+        host = base
+    return f"{prefix}{host}/ws?{urlencode({'role': 'driver', 'token': token})}"

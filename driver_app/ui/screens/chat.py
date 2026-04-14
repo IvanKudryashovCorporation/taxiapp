@@ -11,36 +11,31 @@ from driver_app.ui.widgets import MessageBubble
 
 
 class ChatPanel(BoxLayout):
-    """Driver <-> operator chat panel with polling and persistent history."""
-
     status_text = StringProperty("")
+    mode_title = StringProperty("Оператор")
 
     def __init__(self, **kwargs: object) -> None:
         super().__init__(**kwargs)
-        self._driver_id: str = ""
-        self._last_id: int = 0
+        self._mode = "operator"
+        self._order_public_id: str | None = None
+        self._last_id = 0
         self._poll_event = None
         self._known_ids: set[int] = set()
+        self._local_texts: list[str] = []
 
-    def setup(self, driver_id: str) -> None:
-        self._driver_id = driver_id
+    def configure_mode(self, mode: str, order_public_id: str | None = None) -> None:
+        self._mode = mode
+        self._order_public_id = order_public_id
+        self.mode_title = "Пассажир" if mode == "ride" else "Оператор"
         self._last_id = 0
         self._known_ids.clear()
+        self._local_texts.clear()
         self._clear()
-        self.status_text = "История загружается..."
-
-        def register_worker() -> None:
-            try:
-                from driver_app.services.chat import register_driver
-
-                register_driver(driver_id)
-            except Exception:
-                Clock.schedule_once(
-                    lambda *_: self._set_status("Сервер недоступен. История появится после восстановления соединения."),
-                    0,
-                )
-
-        Thread(target=register_worker, daemon=True).start()
+        if mode == "ride" and not order_public_id:
+            self.status_text = "Нет активного заказа для переписки с пассажиром."
+            self.stop_polling()
+            return
+        self.status_text = ""
         self.start_polling()
 
     def start_polling(self) -> None:
@@ -58,40 +53,19 @@ class ChatPanel(BoxLayout):
         msg_input = self.ids.get("msg_input")
         if msg_input is None:
             return
-
-        draft_text = msg_input.text
-        text = draft_text.strip()
+        text = msg_input.text.strip()
         if not text:
-            self._set_status("Введите текст сообщения.")
             return
+        msg_input.text = ""
+        self._local_texts.append(text)
+        self._append_bubble(text, True)
 
-        if not self._driver_id:
-            self._set_status("Чат не инициализирован. Перезайдите в диалог.")
-            return
+        def worker() -> None:
+            from driver_app.services.chat import send_message
 
-        self._set_status("")
+            send_message(self._mode, text, self._order_public_id)
 
-        def send_worker() -> None:
-            try:
-                from driver_app.services.chat import send_message
-
-                message = send_message(self._driver_id, "driver", text)
-
-                def on_success(*_args: object) -> None:
-                    current_input = self.ids.get("msg_input")
-                    if current_input is not None and current_input.text == draft_text:
-                        current_input.text = ""
-                    self._append_from_payload(message)
-                    self._set_status("")
-
-                Clock.schedule_once(on_success, 0)
-            except Exception:
-                Clock.schedule_once(
-                    lambda *_: self._set_status("Сообщение не отправлено. Проверьте подключение к backend."),
-                    0,
-                )
-
-        Thread(target=send_worker, daemon=True).start()
+        Thread(target=worker, daemon=True).start()
 
     def add_emoji(self, symbol: str) -> None:
         msg_input = self.ids.get("msg_input")
@@ -105,32 +79,21 @@ class ChatPanel(BoxLayout):
         if box is not None:
             box.clear_widgets()
 
-    def _set_status(self, text: str) -> None:
-        self.status_text = text
-
     def _fetch(self) -> None:
-        if not self._driver_id:
-            return
         Thread(target=self._do_fetch, daemon=True).start()
 
     def _do_fetch(self) -> None:
         try:
-            from driver_app.services.chat import fetch_messages
+            from driver_app.services.chat import fetch_messages, flush_outbox
 
-            messages = fetch_messages(self._driver_id, since=self._last_id)
+            flush_outbox(self._mode, self._order_public_id)
+            messages = fetch_messages(self._mode, self._last_id, self._order_public_id)
             Clock.schedule_once(lambda *_: self._on_messages(messages), 0)
-        except Exception:
-            Clock.schedule_once(
-                lambda *_: self._set_status("Сервер недоступен. Ожидаем восстановление соединения..."),
-                0,
-            )
+        except Exception as exc:
+            message = str(exc)
+            Clock.schedule_once(lambda *_ , message=message: setattr(self, "status_text", message), 0)
 
     def _on_messages(self, messages: list[dict[str, Any]]) -> None:
-        if messages:
-            self._set_status("")
-        elif not self._known_ids:
-            self._set_status("История пуста. Напишите оператору первым.")
-
         for message in messages:
             self._append_from_payload(message)
 
@@ -138,25 +101,24 @@ class ChatPanel(BoxLayout):
         message_id = int(message.get("id", 0))
         if message_id and message_id in self._known_ids:
             return
-
         if message_id:
             self._known_ids.add(message_id)
             self._last_id = max(self._last_id, message_id)
 
-        sender = str(message.get("sender", "admin"))
-        text = str(message.get("text", ""))
+        text = str(message.get("text") or "")
+        sender_type = str(message.get("sender_type") or "")
         if not text:
             return
+        if sender_type == "driver" and text in self._local_texts:
+            self._local_texts.remove(text)
+            return
+        self._append_bubble(text, sender_type == "driver")
 
-        self._append_bubble(text=text, is_driver=(sender == "driver"))
-
-    def _append_bubble(self, text: str, is_driver: bool, system: bool = False) -> None:
+    def _append_bubble(self, text: str, is_driver: bool) -> None:
         box = self.ids.get("messages_list")
         if box is None:
             return
-
-        bubble = MessageBubble(text=text, is_driver=is_driver, system=system)
-        box.add_widget(bubble)
+        box.add_widget(MessageBubble(text=text, is_driver=is_driver))
         Clock.schedule_once(lambda *_: self._scroll_to_bottom(), 0.05)
 
     def _scroll_to_bottom(self) -> None:

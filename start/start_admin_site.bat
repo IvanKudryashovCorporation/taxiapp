@@ -3,7 +3,15 @@ setlocal
 cd /d "%~dp0.."
 
 set "PYTHON_EXE=python"
-if exist ".venv\Scripts\python.exe" set "PYTHON_EXE=.venv\Scripts\python.exe"
+
+if not defined DATABASE_URL set "DATABASE_URL=postgresql://taxiapp:taxiapp@127.0.0.1:5432/taxiapp"
+where docker >nul 2>nul && docker compose up -d postgres >nul 2>nul
+"%PYTHON_EXE%" backend\setup_db.py
+if errorlevel 1 (
+  echo PostgreSQL bootstrap failed. Fix DB connection and run again.
+  pause
+  exit /b 1
+)
 
 start "Taxi Admin Backend" cmd /k ""%PYTHON_EXE%" -m uvicorn backend.main:app --reload"
 timeout /t 2 /nobreak >nul
