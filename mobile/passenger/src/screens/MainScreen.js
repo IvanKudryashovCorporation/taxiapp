@@ -132,10 +132,13 @@ export default function MainScreen() {
   const sheetStyle = useMemo(() => {
     if (activeField) {
       if (keyboardH > 0) {
-        const h = SCREEN_H - keyboardH;
+        // Высота — не больше 55% экрана, чтобы инпут (внизу шторки) оказался
+        // примерно посередине видимой зоны, а не улетал к верху экрана
+        const availH = SCREEN_H - keyboardH;
+        const h = Math.min(availH, SCREEN_H * 0.55);
         return { bottom: keyboardH, height: h, maxHeight: h };
       }
-      return { bottom: 0, maxHeight: SCREEN_H * 0.70 };
+      return { bottom: 0, maxHeight: SCREEN_H * 0.65 };
     }
     return { bottom: 0, maxHeight: SCREEN_H * 0.62 };
   }, [activeField, keyboardH]);
@@ -271,12 +274,13 @@ export default function MainScreen() {
       setActiveSugLoading(true);
       clearTimeout(searchTimer.current);
       searchTimer.current = setTimeout(async () => {
-        const res = await geocodeSearch(existing.trim(), centerLat, centerLon, cityName);
+        // Используем координаты города (не центра карты) для bounded-поиска
+        const res = await geocodeSearch(existing.trim(), cityLat ?? centerLat, cityLon ?? centerLon, cityName);
         setActiveSug(res);
         setActiveSugLoading(false);
       }, 0);
     }
-  }, [pickupAddr, dropoffAddr, centerLat, centerLon, cityName]);
+  }, [pickupAddr, dropoffAddr, cityLat, cityLon, centerLat, centerLon, cityName]);
 
   const closeSearch = useCallback(() => {
     setActiveField(null);
@@ -291,11 +295,12 @@ export default function MainScreen() {
     if (text.trim().length < 1) { setActiveSug([]); return; }
     setActiveSugLoading(true);
     searchTimer.current = setTimeout(async () => {
-      const res = await geocodeSearch(text.trim(), centerLat, centerLon, cityName);
+      // Всегда ищем в рамках выбранного города
+      const res = await geocodeSearch(text.trim(), cityLat ?? centerLat, cityLon ?? centerLon, cityName);
       setActiveSug(res);
       setActiveSugLoading(false);
     }, 400);
-  }, [activeField, centerLat, centerLon, cityName]);
+  }, [activeField, cityLat, cityLon, centerLat, centerLon, cityName]);
 
   const selectSug = useCallback((item) => {
     if (activeField === "pickup") {
@@ -388,29 +393,12 @@ export default function MainScreen() {
           </View>
         )}
 
-        {/* ══ РЕЖИМ ПОИСКА ══ */}
+        {/* ══ РЕЖИМ ПОИСКА ══
+              Инпут — ВНИЗУ (прямо над клавиатурой), подсказки — ВЫШЕ      */}
         {activeField && (
           <View style={styles.searchContainer}>
-            <View style={styles.searchHeader}>
-              <Pressable onPress={closeSearch} style={styles.searchBackBtn} hitSlop={12}>
-                <Text style={styles.searchBackText}>←</Text>
-              </Pressable>
-              <TextInput
-                style={styles.searchInput}
-                value={activeText}
-                onChangeText={onActiveSearch}
-                placeholder={activeField === "pickup" ? "Откуда поедете…" : "Куда поедете…"}
-                placeholderTextColor={colors.textMuted}
-                autoFocus
-                returnKeyType="search"
-              />
-              {activeText.length > 0 && (
-                <Pressable onPress={clearActive} style={styles.searchClearBtn} hitSlop={8}>
-                  <Text style={styles.searchClearText}>✕</Text>
-                </Pressable>
-              )}
-            </View>
-            <View style={styles.searchDivider} />
+
+            {/* Подсказки заполняют верхнюю часть шторки */}
             {activeSugLoading
               ? <ActivityIndicator color={colors.textMuted} style={{ marginTop: 24 }} />
               : (
@@ -433,12 +421,36 @@ export default function MainScreen() {
                       {activeText.length >= 1
                         ? "Адреса не найдены — уточните запрос"
                         : activeField === "pickup"
-                          ? "Введите адрес или название места откуда едете"
-                          : "Введите адрес или название места куда едете"}
+                          ? "Введите адрес откуда едете"
+                          : "Введите адрес куда едете"}
                     </Text>
                   }
                 />
               )}
+
+            {/* Разделитель */}
+            <View style={styles.searchDivider} />
+
+            {/* Поле ввода — всегда внизу, прямо над клавиатурой */}
+            <View style={styles.searchHeader}>
+              <Pressable onPress={closeSearch} style={styles.searchBackBtn} hitSlop={12}>
+                <Text style={styles.searchBackText}>←</Text>
+              </Pressable>
+              <TextInput
+                style={styles.searchInput}
+                value={activeText}
+                onChangeText={onActiveSearch}
+                placeholder={activeField === "pickup" ? "Откуда поедете…" : "Куда поедете…"}
+                placeholderTextColor={colors.textMuted}
+                autoFocus
+                returnKeyType="search"
+              />
+              {activeText.length > 0 && (
+                <Pressable onPress={clearActive} style={styles.searchClearBtn} hitSlop={8}>
+                  <Text style={styles.searchClearText}>✕</Text>
+                </Pressable>
+              )}
+            </View>
           </View>
         )}
 
@@ -685,9 +697,9 @@ const styles = StyleSheet.create({
   },
   routeInfoText: { color: colors.text, fontSize: 13, fontWeight: "600" },
 
-  /* Поиск */
-  searchContainer: { flex: 1 },
-  searchHeader: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 10, paddingTop: 16 },
+  /* Поиск — инпут внизу, подсказки сверху */
+  searchContainer: { flex: 1, flexDirection: "column" },
+  searchHeader: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 10, paddingBottom: 14 },
   searchBackBtn: { width: 40, height: 40, backgroundColor: colors.card, borderRadius: radius.md, alignItems: "center", justifyContent: "center", marginRight: 10 },
   searchBackText: { color: colors.text, fontSize: 20, lineHeight: 24 },
   searchInput: { flex: 1, backgroundColor: colors.card, color: colors.text, fontSize: 16, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 12 },

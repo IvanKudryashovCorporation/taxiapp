@@ -203,9 +203,9 @@ export async function geocodeSearch(query, nearLat, nearLon, cityName) {
       addressdetails: 1,
     };
     if (nearLat && nearLon) {
-      const d = 0.8;
+      const d = 0.5; // ~55 км — достаточно для любого города
       params.viewbox = `${nearLon - d},${nearLat + d},${nearLon + d},${nearLat - d}`;
-      params.bounded = 0; // viewbox как подсказка, не ограничение
+      params.bounded = 1; // строго внутри viewbox
     }
     const r = await axios.get("https://nominatim.openstreetmap.org/search", {
       params,
