@@ -61,6 +61,7 @@ const POPULAR = [
 // phase: "detecting" | "detected" | "manual"
 export default function CityScreen({ navigation }) {
   const setCity = useStore((s) => s.setCity);
+  const logout = useStore((s) => s.logout);
 
   const [phase, setPhase] = useState("detecting");
   const [detected, setDetected] = useState(null); // { name, lat, lon }
@@ -136,6 +137,16 @@ export default function CityScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.root}>
       <View style={styles.container}>
+
+        {/* ── Кнопка назад ── */}
+        <Pressable
+          style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
+          onPress={logout}
+          hitSlop={12}
+        >
+          <Text style={styles.backArrow}>←</Text>
+          <Text style={styles.backLabel}>Изменить аккаунт</Text>
+        </Pressable>
 
         <View style={styles.hero}>
           <Text style={styles.kicker}>ДОБРО ПОЖАЛОВАТЬ</Text>
@@ -240,7 +251,33 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   container: { flex: 1, paddingHorizontal: 20 },
 
-  hero: { paddingTop: 16, marginBottom: 24 },
+  /* Кнопка назад */
+  backBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: colors.sheet,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  backArrow: {
+    color: colors.text,
+    fontSize: 18,
+    marginRight: 8,
+    lineHeight: 22,
+  },
+  backLabel: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+
+  hero: { paddingTop: 12, marginBottom: 24 },
   kicker: { color: colors.textMuted, fontSize: 12, fontWeight: "700", letterSpacing: 1 },
   title: { color: colors.text, fontSize: 32, fontWeight: "800", marginTop: 8 },
   subtitle: { color: colors.textMuted, fontSize: 14, marginTop: 8, lineHeight: 20 },

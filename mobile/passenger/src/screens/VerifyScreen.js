@@ -28,7 +28,6 @@ export default function VerifyScreen({ route, navigation }) {
       const res = await api.verifyCode(phone, code.trim());
       if (!res?.token) throw new Error("Не получили токен от сервера");
       await setAuth({ token: res.token, profile: res.passenger });
-      // App.js (conditional stack) автоматически переключит экран при смене token
     } catch (e) {
       // ── ТЕСТОВЫЙ РЕЖИМ: если сервер недоступен — входим с фиктивными данными ──
       const fakeToken = "test-token-passenger-" + phone;
@@ -46,6 +45,17 @@ export default function VerifyScreen({ route, navigation }) {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View style={styles.container}>
+
+          {/* ── Кнопка назад ── */}
+          <Pressable
+            style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
+            onPress={() => navigation.goBack()}
+            hitSlop={12}
+          >
+            <Text style={styles.backArrow}>←</Text>
+            <Text style={styles.backLabel}>Изменить номер</Text>
+          </Pressable>
+
           <View style={styles.hero}>
             <Text style={styles.kicker}>ПОДТВЕРЖДЕНИЕ ВХОДА</Text>
             <Text style={styles.phoneLabel}>Код отправлен на</Text>
@@ -79,12 +89,9 @@ export default function VerifyScreen({ route, navigation }) {
               )}
             </Pressable>
 
-            <Pressable style={styles.back} onPress={() => navigation.goBack()}>
-              <Text style={styles.backText}>Назад</Text>
-            </Pressable>
-
             {!!status && <Text style={styles.err}>{status}</Text>}
           </View>
+
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -94,11 +101,38 @@ export default function VerifyScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   container: { flex: 1, padding: 22, justifyContent: "space-between" },
-  hero: { paddingTop: 30 },
+
+  /* Кнопка назад */
+  backBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: colors.sheet,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 8,
+  },
+  backArrow: {
+    color: colors.text,
+    fontSize: 18,
+    marginRight: 8,
+    lineHeight: 22,
+  },
+  backLabel: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+
+  hero: { paddingTop: 8 },
   kicker: { color: colors.textMuted, fontSize: 12, fontWeight: "700", letterSpacing: 1 },
   phoneLabel: { color: colors.textMuted, fontSize: 16, marginTop: 16 },
   phone: { color: colors.text, fontSize: 32, fontWeight: "800", marginTop: 4 },
   testHint: { color: colors.accent, marginTop: 16, fontSize: 13 },
+
   card: {
     backgroundColor: colors.sheet,
     borderRadius: radius.xl,
@@ -126,7 +160,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   primaryText: { color: colors.accentText, fontWeight: "800", fontSize: 15 },
-  back: { marginTop: 10, alignItems: "center", paddingVertical: 12 },
-  backText: { color: colors.textMuted, fontSize: 14, fontWeight: "600" },
   err: { color: colors.danger, marginTop: 12, fontSize: 13 },
 });
