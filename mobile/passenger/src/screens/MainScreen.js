@@ -97,16 +97,6 @@ export default function MainScreen() {
   const [sheetExpanded, setSheetExpanded] = useState(true);
   const [keyboardH,     setKeyboardH]     = useState(0);
 
-  // Свайп вниз по ручке — сворачивает шторку
-  const panResponder = useMemo(() => PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 8,
-    onPanResponderRelease: (_, g) => {
-      if (g.dy > 40)       setSheetExpanded(false); // свайп вниз
-      else if (g.dy < -40) setSheetExpanded(true);  // свайп вверх
-    },
-  }), []);
-
   // Поднимаем шторку над клавиатурой
   useEffect(() => {
     const show = Keyboard.addListener(
@@ -120,10 +110,35 @@ export default function MainScreen() {
     return () => { show.remove(); hide.remove(); };
   }, []);
 
+  // Свайп вниз по ручке — сворачивает шторку
+  const panResponder = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 8,
+    onPanResponderRelease: (_, g) => {
+      if (g.dy > 40)       setSheetExpanded(false);
+      else if (g.dy < -40) setSheetExpanded(true);
+    },
+  }), []);
+
   // ── Активное поисковое поле: null | "pickup" | "dropoff"
   const [activeField,      setActiveField]      = useState(null);
   const [activeSug,        setActiveSug]        = useState([]);
   const [activeSugLoading, setActiveSugLoading] = useState(false);
+
+  // Стиль шторки — адаптируется под экран и клавиатуру
+  const sheetStyle = useMemo(() => {
+    if (activeField) {
+      if (keyboardH > 0) {
+        // Клавиатура открыта: шторка точно заполняет пространство над ней
+        const h = SCREEN_H - keyboardH;
+        return { bottom: keyboardH, height: h, maxHeight: h };
+      }
+      // Клавиатура ещё не открылась: 70% экрана снизу
+      return { bottom: 0, maxHeight: SCREEN_H * 0.70 };
+    }
+    // Обычный режим
+    return { bottom: 0, maxHeight: SCREEN_H * 0.62 };
+  }, [activeField, keyboardH]);
 
   const [centerLat, setCenterLat] = useState(initLat);
   const [centerLon, setCenterLon] = useState(initLon);
@@ -372,12 +387,7 @@ export default function MainScreen() {
       </SafeAreaView>
 
       {/* ───── Bottom sheet ───── */}
-      <View style={[
-        styles.sheet,
-        activeField
-          ? { bottom: keyboardH, height: SCREEN_H - keyboardH, maxHeight: SCREEN_H - keyboardH, borderTopLeftRadius: 0, borderTopRightRadius: 0 }
-          : { bottom: 0, maxHeight: "62%" },
-      ]}>
+      <View style={[styles.sheet, sheetStyle]}>
 
         {/* Ручка — свайп вниз/вверх и тап для переключения */}
         {!activeField && (
