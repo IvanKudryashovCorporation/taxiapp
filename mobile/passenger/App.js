@@ -11,6 +11,7 @@ import { colors } from "./src/theme";
 
 import LoginScreen from "./src/screens/LoginScreen";
 import VerifyScreen from "./src/screens/VerifyScreen";
+import CityScreen from "./src/screens/CityScreen";
 import MainScreen from "./src/screens/MainScreen";
 
 const Stack = createNativeStackNavigator();
@@ -33,6 +34,7 @@ export default function App() {
   const bootstrap = useStore((s) => s.bootstrap);
   const bootstrapped = useStore((s) => s.bootstrapped);
   const token = useStore((s) => s.token);
+  const cityLat = useStore((s) => s.cityLat);
 
   useEffect(() => {
     bootstrap();
@@ -53,10 +55,11 @@ export default function App() {
         <NavigationContainer theme={navTheme}>
           <Stack.Navigator
             screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}
-            initialRouteName={token ? "Main" : "Login"}
+            initialRouteName={token ? (cityLat ? "Main" : "City") : "Login"}
           >
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Verify" component={VerifyScreen} />
+            <Stack.Screen name="City" component={CityScreen} />
             <Stack.Screen name="Main" component={MainScreen} />
           </Stack.Navigator>
         </NavigationContainer>

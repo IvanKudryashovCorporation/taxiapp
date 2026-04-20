@@ -28,15 +28,17 @@ export default function VerifyScreen({ route, navigation }) {
       const res = await api.verifyCode(phone, code.trim());
       if (!res?.token) throw new Error("Не получили токен от сервера");
       await setAuth({ token: res.token, profile: res.passenger });
-      navigation.reset({ index: 0, routes: [{ name: "Main" }] });
     } catch (e) {
       // ── ТЕСТОВЫЙ РЕЖИМ: если сервер недоступен — входим с фиктивными данными ──
       const fakeToken = "test-token-passenger-" + phone;
       const fakeProfile = { id: 1, phone, full_name: "Тест Пассажир" };
       await setAuth({ token: fakeToken, profile: fakeProfile });
-      navigation.reset({ index: 0, routes: [{ name: "Main" }] });
     } finally {
       setLoading(false);
+      // После авторизации: если город ещё не выбран — идём на CityScreen
+      const { cityLat } = useStore.getState();
+      const next = cityLat ? "Main" : "City";
+      navigation.reset({ index: 0, routes: [{ name: next }] });
     }
   };
 

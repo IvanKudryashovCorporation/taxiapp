@@ -33,13 +33,18 @@ function buildHTML(centerLat, centerLon, markers) {
     var c = map.getCenter();
     window.ReactNativeWebView.postMessage(JSON.stringify({type:'center',lat:c.lat,lon:c.lng}));
   });
+  map.whenReady(function(){
+    setTimeout(function(){
+      window.ReactNativeWebView.postMessage(JSON.stringify({type:'ready'}));
+    }, 200);
+  });
 </script>
 </body>
 </html>`;
 }
 
 const LeafletMap = forwardRef(function LeafletMap(
-  { centerLat = 55.7558, centerLon = 37.6173, markers = [], onCenterChange, style },
+  { centerLat = 55.7558, centerLon = 37.6173, markers = [], onCenterChange, onReady, style },
   ref
 ) {
   const webviewRef = useRef(null);
@@ -74,6 +79,8 @@ const LeafletMap = forwardRef(function LeafletMap(
             const data = JSON.parse(e.nativeEvent.data);
             if (data.type === "center" && onCenterChange) {
               onCenterChange(data.lat, data.lon);
+            } else if (data.type === "ready" && onReady) {
+              onReady();
             }
           } catch {}
         }}

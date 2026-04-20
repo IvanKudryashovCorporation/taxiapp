@@ -8,6 +8,7 @@ export const WS_URL =
 export const STORAGE_KEYS = {
   token: "passenger.token",
   profile: "passenger.profile",
+  city: "passenger.city",
 };
 
 export const CAR_CLASSES = [

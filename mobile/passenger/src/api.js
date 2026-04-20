@@ -133,16 +133,90 @@ export const api = {
   },
 };
 
-// Nominatim (OpenStreetMap) address lookup — used for "use center of map as pickup/dropoff"
+// Nominatim (OpenStreetMap) reverse geocoding
 export async function reverseGeocode(lat, lon) {
   try {
     const r = await axios.get("https://nominatim.openstreetmap.org/reverse", {
-      params: { lat, lon, format: "json", "accept-language": "ru" },
+      params: { lat, lon, format: "json", "accept-language": "ru", addressdetails: 1 },
       timeout: 8000,
       headers: { "User-Agent": "RassvetPassenger/1.0" },
     });
-    return r.data?.display_name || null;
+    return shortNominatimAddress(r.data) || r.data?.display_name || null;
   } catch {
     return null;
+  }
+}
+
+function shortNominatimAddress(item) {
+  if (!item) return null;
+  const a = item.address || {};
+  const road = a.road || a.pedestrian || a.footway || a.path || a.street;
+  const num = a.house_number;
+  const city = a.city || a.town || a.village || a.suburb || a.quarter;
+  const parts = [road, num].filter(Boolean);
+  if (parts.length) return parts.join(", ") + (city ? `, ${city}` : "");
+  return null;
+}
+
+// Forward geocoding with autocomplete (biased to nearLat/nearLon area)
+export async function geocodeSearch(query, nearLat, nearLon) {
+  try {
+    const params = {
+      q: query,
+      format: "json",
+      "accept-language": "ru",
+      limit: 7,
+      countrycodes: "ru",
+      addressdetails: 1,
+    };
+    if (nearLat && nearLon) {
+      const d = 0.5;
+      params.viewbox = `${nearLon - d},${nearLat + d},${nearLon + d},${nearLat - d}`;
+      params.bounded = 1;
+    }
+    const r = await axios.get("https://nominatim.openstreetmap.org/search", {
+      params,
+      timeout: 8000,
+      headers: { "User-Agent": "RassvetPassenger/1.0" },
+    });
+    return (r.data || []).map((item) => ({
+      label: shortNominatimAddress(item) || item.display_name || "",
+      lat: parseFloat(item.lat),
+      lon: parseFloat(item.lon),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+// City search (for CityScreen — Russian cities/towns)
+export async function searchCity(query) {
+  try {
+    const r = await axios.get("https://nominatim.openstreetmap.org/search", {
+      params: {
+        q: query,
+        format: "json",
+        "accept-language": "ru",
+        limit: 8,
+        countrycodes: "ru",
+        addressdetails: 1,
+        featuretype: "city",
+      },
+      timeout: 8000,
+      headers: { "User-Agent": "RassvetPassenger/1.0" },
+    });
+    return (r.data || []).map((item) => ({
+      label:
+        item.address?.city ||
+        item.address?.town ||
+        item.address?.village ||
+        item.name ||
+        item.display_name,
+      region: item.address?.state || item.address?.region || "",
+      lat: parseFloat(item.lat),
+      lon: parseFloat(item.lon),
+    }));
+  } catch {
+    return [];
   }
 }

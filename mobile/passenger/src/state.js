@@ -12,6 +12,11 @@ export const useStore = create((set, get) => ({
   profile: null,
   bootstrapped: false,
 
+  // city (saved after first login)
+  cityName: null,
+  cityLat: null,
+  cityLon: null,
+
   // state
   wsStatus: "offline",
   currentOrder: null,
@@ -21,8 +26,16 @@ export const useStore = create((set, get) => ({
   async bootstrap() {
     const token = await getItem(STORAGE_KEYS.token);
     const profile = await getItem(STORAGE_KEYS.profile);
+    const city = await getItem(STORAGE_KEYS.city);
     setAuthToken(token);
-    set({ token, profile, bootstrapped: true });
+    set({
+      token,
+      profile,
+      bootstrapped: true,
+      cityName: city?.name || null,
+      cityLat: city?.lat || null,
+      cityLon: city?.lon || null,
+    });
     if (token) {
       get()._initSocket();
       get().refreshState();
@@ -38,10 +51,16 @@ export const useStore = create((set, get) => ({
     get().refreshState();
   },
 
+  async setCity({ name, lat, lon }) {
+    await setItem(STORAGE_KEYS.city, { name, lat, lon });
+    set({ cityName: name, cityLat: lat, cityLon: lon });
+  },
+
   async logout() {
     setAuthToken(null);
     await removeItem(STORAGE_KEYS.token);
     await removeItem(STORAGE_KEYS.profile);
+    await removeItem(STORAGE_KEYS.city);
     if (socket) {
       socket.disconnect();
       socket = null;
@@ -52,6 +71,9 @@ export const useStore = create((set, get) => ({
       currentOrder: null,
       history: [],
       wsStatus: "offline",
+      cityName: null,
+      cityLat: null,
+      cityLon: null,
     });
   },
 
