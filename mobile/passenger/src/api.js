@@ -168,28 +168,44 @@ function shortNominatimAddress(item) {
   if (!item) return null;
   const a = item.address || {};
   const road = a.road || a.pedestrian || a.footway || a.path || a.street;
-  const num = a.house_number;
-  const city = a.city || a.town || a.village || a.suburb || a.quarter;
-  const parts = [road, num].filter(Boolean);
-  if (parts.length) return parts.join(", ") + (city ? `, ${city}` : "");
+  const num  = a.house_number;
+  const city = a.city || a.town || a.village;
+
+  if (road) {
+    const parts = [road];
+    if (num)  parts.push(num);
+    if (city) parts.push(city);
+    return parts.join(", ");
+  }
+
+  // Запасной вариант — первые 3 части display_name
+  if (item.display_name) {
+    return item.display_name.split(",").slice(0, 3).map((s) => s.trim()).join(", ");
+  }
   return null;
 }
 
-// Forward geocoding with autocomplete (biased to nearLat/nearLon area)
-export async function geocodeSearch(query, nearLat, nearLon) {
+// Forward geocoding — поиск адресов с привязкой к городу
+// cityName добавляется к запросу для точности (напр. "Пушкина, Севастополь")
+export async function geocodeSearch(query, nearLat, nearLon, cityName) {
   try {
+    // Добавляем город к запросу если он ещё не содержит запятой
+    const q = cityName && !query.includes(",")
+      ? `${query}, ${cityName}`
+      : query;
+
     const params = {
-      q: query,
+      q,
       format: "json",
       "accept-language": "ru",
-      limit: 7,
+      limit: 8,
       countrycodes: "ru",
       addressdetails: 1,
     };
     if (nearLat && nearLon) {
-      const d = 0.5;
+      const d = 0.8;
       params.viewbox = `${nearLon - d},${nearLat + d},${nearLon + d},${nearLat - d}`;
-      params.bounded = 1;
+      params.bounded = 0; // viewbox как подсказка, не ограничение
     }
     const r = await axios.get("https://nominatim.openstreetmap.org/search", {
       params,
@@ -200,7 +216,7 @@ export async function geocodeSearch(query, nearLat, nearLon) {
       label: shortNominatimAddress(item) || item.display_name || "",
       lat: parseFloat(item.lat),
       lon: parseFloat(item.lon),
-    }));
+    })).filter((item) => item.label);
   } catch {
     return [];
   }

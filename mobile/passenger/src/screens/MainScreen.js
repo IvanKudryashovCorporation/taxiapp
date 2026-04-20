@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   Dimensions,
   Keyboard,
   Platform,
+  PanResponder,
 } from "react-native";
 import * as Location from "expo-location";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -77,6 +78,7 @@ const pin = StyleSheet.create({
 export default function MainScreen() {
   const cityLat  = useStore((s) => s.cityLat);
   const cityLon  = useStore((s) => s.cityLon);
+  const cityName = useStore((s) => s.cityName);
   const currentOrder = useStore((s) => s.currentOrder);
   const history      = useStore((s) => s.history);
   const wsStatus     = useStore((s) => s.wsStatus);
@@ -94,6 +96,16 @@ export default function MainScreen() {
   const [tab,           setTab]           = useState(currentOrder ? "ride" : "create");
   const [sheetExpanded, setSheetExpanded] = useState(true);
   const [keyboardH,     setKeyboardH]     = useState(0);
+
+  // Свайп вниз по ручке — сворачивает шторку
+  const panResponder = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 8,
+    onPanResponderRelease: (_, g) => {
+      if (g.dy > 40)       setSheetExpanded(false); // свайп вниз
+      else if (g.dy < -40) setSheetExpanded(true);  // свайп вверх
+    },
+  }), []);
 
   // Поднимаем шторку над клавиатурой
   useEffect(() => {
@@ -222,16 +234,16 @@ export default function MainScreen() {
     setActiveSug([]);
     // Если поле уже заполнено — сразу ищем
     const existingText = field === "pickup" ? pickupAddr : dropoffAddr;
-    if (existingText.trim().length >= 3) {
+    if (existingText.trim().length >= 1) {
       setActiveSugLoading(true);
       clearTimeout(searchTimer.current);
       searchTimer.current = setTimeout(async () => {
-        const res = await geocodeSearch(existingText.trim(), centerLat, centerLon);
+        const res = await geocodeSearch(existingText.trim(), centerLat, centerLon, cityName);
         setActiveSug(res);
         setActiveSugLoading(false);
       }, 0);
     }
-  }, [pickupAddr, dropoffAddr, centerLat, centerLon]);
+  }, [pickupAddr, dropoffAddr, centerLat, centerLon, cityName]);
 
   const closeSearch = useCallback(() => {
     setActiveField(null);
@@ -251,14 +263,14 @@ export default function MainScreen() {
       setDropoffLon(null);
     }
     clearTimeout(searchTimer.current);
-    if (text.trim().length < 3) { setActiveSug([]); return; }
+    if (text.trim().length < 1) { setActiveSug([]); return; }
     setActiveSugLoading(true);
     searchTimer.current = setTimeout(async () => {
-      const res = await geocodeSearch(text.trim(), centerLat, centerLon);
+      const res = await geocodeSearch(text.trim(), centerLat, centerLon, cityName);
       setActiveSug(res);
       setActiveSugLoading(false);
     }, 400);
-  }, [activeField, centerLat, centerLon]);
+  }, [activeField, centerLat, centerLon, cityName]);
 
   // ── Выбрать подсказку ──
   const selectSug = useCallback((item) => {
@@ -360,14 +372,25 @@ export default function MainScreen() {
       </SafeAreaView>
 
       {/* ───── Bottom sheet ───── */}
-      <View style={[styles.sheet, activeField && styles.sheetSearch, { bottom: keyboardH }]}>
+      <View style={[
+        styles.sheet,
+        activeField
+          ? { bottom: keyboardH, height: SCREEN_H - keyboardH, maxHeight: SCREEN_H - keyboardH, borderTopLeftRadius: 0, borderTopRightRadius: 0 }
+          : { bottom: 0, maxHeight: "62%" },
+      ]}>
 
-        {/* Ручка — только когда не в режиме поиска */}
+        {/* Ручка — свайп вниз/вверх и тап для переключения */}
         {!activeField && (
-          <Pressable onPress={() => setSheetExpanded((v) => !v)} style={styles.handleWrap} hitSlop={12}>
-            <View style={styles.handle} />
-            <Text style={styles.handleArrow}>{sheetExpanded ? "▼" : "▲  развернуть"}</Text>
-          </Pressable>
+          <View
+            {...panResponder.panHandlers}
+            style={styles.handleWrap}
+            onStartShouldSetResponder={() => false}
+          >
+            <Pressable onPress={() => setSheetExpanded((v) => !v)} hitSlop={10}>
+              <View style={styles.handle} />
+              <Text style={styles.handleArrow}>{sheetExpanded ? "▼" : "▲  развернуть"}</Text>
+            </Pressable>
+          </View>
         )}
 
         {/* ══ РЕЖИМ ПОИСКА ══ */}
@@ -628,10 +651,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 26, borderTopRightRadius: 26,
     maxHeight: "62%",
     paddingTop: 0, zIndex: 20,
-  },
-  sheetSearch: {
-    // Высота = весь экран минус клавиатура (bottom подставляется динамически)
-    maxHeight: SCREEN_H * 0.92,
   },
 
   handleWrap: { alignItems: "center", paddingVertical: 8 },
