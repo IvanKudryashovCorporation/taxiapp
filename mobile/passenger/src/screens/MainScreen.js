@@ -1,24 +1,13 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  ScrollView,
-  FlatList,
-  StyleSheet,
-  ActivityIndicator,
-  Alert,
-  Dimensions,
-  Keyboard,
-  Platform,
-  PanResponder,
+  View, Text, TextInput, Pressable, ScrollView, FlatList,
+  StyleSheet, ActivityIndicator, Alert, Dimensions, Keyboard, Platform, PanResponder,
 } from "react-native";
 import * as Location from "expo-location";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useStore } from "../state";
-import { api, reverseGeocode, geocodeSearch } from "../api";
+import { api, reverseGeocode, geocodeSearch, getRoute } from "../api";
 import { CAR_CLASSES } from "../config";
 import { colors, radius } from "../theme";
 import LeafletMap from "../components/LeafletMap";
@@ -74,6 +63,20 @@ const pin = StyleSheet.create({
   leg: { width: 4, height: 7, borderRadius: 2, backgroundColor: "#1a1a1a" },
 });
 
+/* ─── Утилиты ─── */
+function formatMoney(v) { return `${Math.round(Number(v || 0)).toLocaleString("ru-RU")} ₽`; }
+function formatDistance(m) {
+  return m >= 1000 ? `${(m / 1000).toFixed(1)} км` : `${Math.round(m)} м`;
+}
+function formatDuration(s) {
+  const min = Math.round(s / 60);
+  if (min < 60) return `~${min} мин`;
+  return `~${Math.floor(min / 60)} ч ${min % 60} мин`;
+}
+function humanStatus(s) {
+  return ({ created:"новый", searching_driver:"ищем водителя", accepted:"водитель назначен", driver_on_the_way:"водитель в пути", driver_nearby_leave_now:"водитель рядом", arrived:"водитель на месте", ride_in_progress:"поездка идёт", completed:"поездка завершена", cancelled:"отменён" }[s] || s || "—");
+}
+
 /* ─── Main Screen ─── */
 export default function MainScreen() {
   const cityLat  = useStore((s) => s.cityLat);
@@ -97,7 +100,7 @@ export default function MainScreen() {
   const [sheetExpanded, setSheetExpanded] = useState(true);
   const [keyboardH,     setKeyboardH]     = useState(0);
 
-  // Поднимаем шторку над клавиатурой
+  // Клавиатура
   useEffect(() => {
     const show = Keyboard.addListener(
       Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
@@ -110,7 +113,7 @@ export default function MainScreen() {
     return () => { show.remove(); hide.remove(); };
   }, []);
 
-  // Свайп вниз по ручке — сворачивает шторку
+  // Свайп по ручке
   const panResponder = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 8,
@@ -120,31 +123,30 @@ export default function MainScreen() {
     },
   }), []);
 
-  // ── Активное поисковое поле: null | "pickup" | "dropoff"
+  // Поиск адреса
   const [activeField,      setActiveField]      = useState(null);
   const [activeSug,        setActiveSug]        = useState([]);
   const [activeSugLoading, setActiveSugLoading] = useState(false);
 
-  // Стиль шторки — адаптируется под экран и клавиатуру
+  // Динамический стиль шторки
   const sheetStyle = useMemo(() => {
     if (activeField) {
       if (keyboardH > 0) {
-        // Клавиатура открыта: шторка точно заполняет пространство над ней
         const h = SCREEN_H - keyboardH;
         return { bottom: keyboardH, height: h, maxHeight: h };
       }
-      // Клавиатура ещё не открылась: 70% экрана снизу
       return { bottom: 0, maxHeight: SCREEN_H * 0.70 };
     }
-    // Обычный режим
     return { bottom: 0, maxHeight: SCREEN_H * 0.62 };
   }, [activeField, keyboardH]);
 
-  const [centerLat, setCenterLat] = useState(initLat);
-  const [centerLon, setCenterLon] = useState(initLon);
-  const [geocoding, setGeocoding] = useState(false);
+  // Центр карты (для кнопки "С карты")
+  const [centerLat,     setCenterLat]     = useState(initLat);
+  const [centerLon,     setCenterLon]     = useState(initLon);
+  const [centerAddress, setCenterAddress] = useState("");
+  const [geocoding,     setGeocoding]     = useState(false);
 
-  // Форма заказа
+  // Форма
   const [pickupAddr, setPickupAddr] = useState("");
   const [pickupLat,  setPickupLat]  = useState(null);
   const [pickupLon,  setPickupLon]  = useState(null);
@@ -152,34 +154,32 @@ export default function MainScreen() {
   const [dropoffLat,  setDropoffLat]  = useState(null);
   const [dropoffLon,  setDropoffLon]  = useState(null);
 
-  const [carClass, setCarClass] = useState("econom");
-  const [comment,  setComment]  = useState("");
-  const [quote,    setQuote]    = useState(null);
-  const [busy,     setBusy]     = useState(false);
-  const [status,   setStatus]   = useState("");
+  const [carClass,   setCarClass]   = useState("econom");
+  const [comment,    setComment]    = useState("");
+  const [quote,      setQuote]      = useState(null);
+  const [routeInfo,  setRouteInfo]  = useState(null); // { distanceM, durationS }
+  const [busy,       setBusy]       = useState(false);
+  const [status,     setStatus]     = useState("");
 
   useEffect(() => {
     if (currentOrder && tab === "create") setTab("ride");
     if (!currentOrder && tab === "ride")  setTab("create");
   }, [currentOrder]);
 
-  // Карта готова → центрируем на городе
+  // Карта готова — летим на город
   const handleMapReady = useCallback(() => {
     if (cityLat) mapRef.current?.setCenter(cityLat, cityLon, 13);
   }, [cityLat, cityLon]);
 
-  // GPS — непрерывное слежение, синяя точка на карте
+  // GPS — непрерывное слежение + синяя точка
   useEffect(() => {
     let cancelled = false;
     let subscription = null;
     let hasInitialCenter = false;
-
     (async () => {
       try {
         const { status: perm } = await Location.requestForegroundPermissionsAsync();
         if (perm !== "granted" || cancelled) return;
-
-        // Шаг 1: последняя известная позиция (мгновенно)
         const last = await Location.getLastKnownPositionAsync();
         if (last && !cancelled) {
           const { latitude: lat, longitude: lon } = last.coords;
@@ -187,45 +187,60 @@ export default function MainScreen() {
           mapRef.current?.setUserLocation(lat, lon);
           hasInitialCenter = true;
         }
-
-        // Шаг 2: непрерывное слежение
         subscription = await Location.watchPositionAsync(
-          {
-            accuracy: Location.Accuracy.Balanced,
-            timeInterval: 3000,   // обновлять не чаще раз в 3 сек
-            distanceInterval: 5,  // и только при сдвиге > 5 метров
-          },
+          { accuracy: Location.Accuracy.Balanced, timeInterval: 3000, distanceInterval: 5 },
           (pos) => {
             if (cancelled) return;
             const { latitude: lat, longitude: lon } = pos.coords;
-            // Синяя точка обновляется всегда
             mapRef.current?.setUserLocation(lat, lon);
-            // Центрировать карту только при первом фиксе
-            if (!hasInitialCenter) {
-              hasInitialCenter = true;
-              mapRef.current?.setCenter(lat, lon, 15);
-            }
+            if (!hasInitialCenter) { hasInitialCenter = true; mapRef.current?.setCenter(lat, lon, 15); }
           }
         );
-      } catch (e) {
-        console.warn("GPS:", e?.message);
-      }
+      } catch (e) { console.warn("GPS:", e?.message); }
     })();
-
-    return () => {
-      cancelled = true;
-      subscription?.remove();
-    };
+    return () => { cancelled = true; subscription?.remove(); };
   }, []); // eslint-disable-line
 
-  // Только маркер Б на карте (А показывает пин)
+  // Маркеры А и Б на карте (только когда явно выбраны)
   useEffect(() => {
     const markers = [];
+    if (pickupLat  != null) markers.push({ lat: pickupLat,  lon: pickupLon,  color: "#FF5A4D", label: "А" });
     if (dropoffLat != null) markers.push({ lat: dropoffLat, lon: dropoffLon, color: "#5CB8FF", label: "Б" });
     mapRef.current?.setMarkers(markers);
-  }, [dropoffLat, dropoffLon]);
+  }, [pickupLat, pickupLon, dropoffLat, dropoffLon]);
 
-  // ── Карта двигается → авто-заполнение «Откуда» ──
+  // ── Маршрут + авто-цена когда обе точки выбраны ──
+  useEffect(() => {
+    if (pickupLat == null || dropoffLat == null) {
+      mapRef.current?.clearRoute();
+      setRouteInfo(null);
+      setQuote(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      // 1. Маршрут на карте
+      const route = await getRoute(pickupLat, pickupLon, dropoffLat, dropoffLon);
+      if (!cancelled && route) {
+        mapRef.current?.setRoute(route.coords);
+        setRouteInfo({ distanceM: route.distanceM, durationS: route.durationS });
+      }
+      // 2. Цена
+      try {
+        const res = await api.quote({
+          pickup_lat: pickupLat, pickup_lon: pickupLon,
+          dropoff_lat: dropoffLat, dropoff_lon: dropoffLon,
+          pickup_address: pickupAddr, dropoff_address: dropoffAddr,
+          car_class: carClass, passengers_count: 1,
+          payment_method: "cash", promo_code: null, waypoints: [],
+        });
+        if (!cancelled) { setQuote(res); setLastQuote(res); }
+      } catch { if (!cancelled) setQuote(null); }
+    })();
+    return () => { cancelled = true; };
+  }, [pickupLat, pickupLon, dropoffLat, dropoffLon, carClass]); // eslint-disable-line
+
+  // Карта двигается → обновляем только centerAddress (НЕ поля формы)
   const handleCenterChange = useCallback((lat, lon) => {
     setCenterLat(lat);
     setCenterLon(lon);
@@ -234,26 +249,29 @@ export default function MainScreen() {
     geocodeTimer.current = setTimeout(async () => {
       const addr = await reverseGeocode(lat, lon);
       setGeocoding(false);
-      if (addr) {
-        setPickupAddr(addr);
-        setPickupLat(lat);
-        setPickupLon(lon);
-      }
+      setCenterAddress(addr || "");
     }, 700);
   }, []);
 
-  // ── Открыть поиск для поля ──
+  // Кнопка "С карты" для поля откуда
+  const useCenterForPickup = useCallback(() => {
+    if (!centerAddress && !geocoding) return;
+    setPickupAddr(centerAddress || "");
+    setPickupLat(centerLat);
+    setPickupLon(centerLon);
+  }, [centerAddress, centerLat, centerLon, geocoding]);
+
+  // Открыть поиск
   const openSearch = useCallback((field) => {
     setActiveField(field);
     setSheetExpanded(true);
     setActiveSug([]);
-    // Если поле уже заполнено — сразу ищем
-    const existingText = field === "pickup" ? pickupAddr : dropoffAddr;
-    if (existingText.trim().length >= 1) {
+    const existing = field === "pickup" ? pickupAddr : dropoffAddr;
+    if (existing.trim().length >= 1) {
       setActiveSugLoading(true);
       clearTimeout(searchTimer.current);
       searchTimer.current = setTimeout(async () => {
-        const res = await geocodeSearch(existingText.trim(), centerLat, centerLon, cityName);
+        const res = await geocodeSearch(existing.trim(), centerLat, centerLon, cityName);
         setActiveSug(res);
         setActiveSugLoading(false);
       }, 0);
@@ -266,17 +284,9 @@ export default function MainScreen() {
     clearTimeout(searchTimer.current);
   }, []);
 
-  // ── Поиск в активном поле ──
   const onActiveSearch = useCallback((text) => {
-    if (activeField === "pickup") {
-      setPickupAddr(text);
-      setPickupLat(null);
-      setPickupLon(null);
-    } else {
-      setDropoffAddr(text);
-      setDropoffLat(null);
-      setDropoffLon(null);
-    }
+    if (activeField === "pickup") { setPickupAddr(text); setPickupLat(null); setPickupLon(null); }
+    else { setDropoffAddr(text); setDropoffLat(null); setDropoffLon(null); }
     clearTimeout(searchTimer.current);
     if (text.trim().length < 1) { setActiveSug([]); return; }
     setActiveSugLoading(true);
@@ -287,17 +297,12 @@ export default function MainScreen() {
     }, 400);
   }, [activeField, centerLat, centerLon, cityName]);
 
-  // ── Выбрать подсказку ──
   const selectSug = useCallback((item) => {
     if (activeField === "pickup") {
-      setPickupAddr(item.label);
-      setPickupLat(item.lat);
-      setPickupLon(item.lon);
+      setPickupAddr(item.label); setPickupLat(item.lat); setPickupLon(item.lon);
       mapRef.current?.setCenter(item.lat, item.lon, 16);
     } else {
-      setDropoffAddr(item.label);
-      setDropoffLat(item.lat);
-      setDropoffLon(item.lon);
+      setDropoffAddr(item.label); setDropoffLat(item.lat); setDropoffLon(item.lon);
     }
     closeSearch();
   }, [activeField, closeSearch]);
@@ -308,59 +313,45 @@ export default function MainScreen() {
     setActiveSug([]);
   }, [activeField]);
 
-  // ── Заказ ──
-  const buildPayload = () => ({
-    pickup_address: pickupAddr.trim() || null,
-    pickup_lat: pickupLat, pickup_lon: pickupLon,
-    dropoff_address: dropoffAddr.trim() || null,
-    dropoff_lat: dropoffLat, dropoff_lon: dropoffLon,
-    comment: comment.trim(),
-    passengers_count: 1, car_class: carClass,
-    payment_method: "cash", promo_code: null, waypoints: [],
-  });
-
-  const doQuote = async () => {
-    if (pickupLat == null || dropoffLat == null) {
-      setStatus("Укажите точку А (пин на карте) и точку Б (поиск)"); return;
-    }
-    setBusy(true); setStatus("");
-    try { const res = await api.quote(buildPayload()); setQuote(res); setLastQuote(res); }
-    catch (e) { setStatus(e.message || "Не удалось рассчитать"); }
-    finally { setBusy(false); }
-  };
-
   const doCreate = async () => {
-    if (pickupLat == null || dropoffLat == null) { setStatus("Укажите точки А и Б"); return; }
+    if (pickupLat == null || dropoffLat == null) { setStatus("Укажите точку А и точку Б"); return; }
     setBusy(true); setStatus("");
     try {
-      await api.createOrder(buildPayload());
+      await api.createOrder({
+        pickup_address: pickupAddr, pickup_lat: pickupLat, pickup_lon: pickupLon,
+        dropoff_address: dropoffAddr, dropoff_lat: dropoffLat, dropoff_lon: dropoffLon,
+        comment: comment.trim(), passengers_count: 1, car_class: carClass,
+        payment_method: "cash", promo_code: null, waypoints: [],
+      });
       await refreshState();
       setStatus("Заказ создан. Ищем водителя…");
     } catch (e) { setStatus(e.message || "Не удалось создать"); }
     finally { setBusy(false); }
   };
 
-  const activeText = activeField === "pickup" ? pickupAddr : dropoffAddr;
-  const orderBtnText = quote ? `Заказать  ${formatMoney(quote.fare_total)}` : "Заказать";
+  const activeText    = activeField === "pickup" ? pickupAddr : dropoffAddr;
+  const orderBtnReady = pickupLat != null && dropoffLat != null;
+  const orderBtnText  = orderBtnReady && quote
+    ? `${formatMoney(quote.fare_total)}  ЗАКАЗАТЬ`
+    : orderBtnReady
+    ? "ЗАКАЗАТЬ"
+    : "Выберите маршрут";
 
   return (
     <View style={styles.root}>
-      {/* Карта */}
       <LeafletMap
-        ref={mapRef}
-        centerLat={initLat} centerLon={initLon}
+        ref={mapRef} centerLat={initLat} centerLon={initLon}
         style={StyleSheet.absoluteFill}
-        onCenterChange={handleCenterChange}
-        onReady={handleMapReady}
+        onCenterChange={handleCenterChange} onReady={handleMapReady}
       />
 
-      {/* Адресная плашка сверху */}
+      {/* Плашка точки подачи сверху */}
       {tab === "create" && !activeField && (
         <SafeAreaView style={styles.addrBarOuter} pointerEvents="none">
           <View style={styles.addrBar}>
             <Text style={styles.addrBarLabel}>Точка подачи</Text>
             <Text style={styles.addrBarText} numberOfLines={1}>
-              {geocoding ? "уточняем…" : pickupAddr || "Переместите карту"}
+              {geocoding ? "уточняем…" : (centerAddress || "Переместите карту")}
             </Text>
           </View>
         </SafeAreaView>
@@ -377,25 +368,19 @@ export default function MainScreen() {
       <SafeAreaView style={styles.topOverlay} pointerEvents="box-none">
         <View style={styles.wsPill}>
           <View style={[styles.wsDot, { backgroundColor: wsStatus === "online" ? colors.success : colors.textDim }]} />
-          <Text style={styles.wsText}>
-            {wsStatus === "online" ? "онлайн" : wsStatus === "connecting" ? "подключение…" : "офлайн"}
-          </Text>
+          <Text style={styles.wsText}>{wsStatus === "online" ? "онлайн" : wsStatus === "connecting" ? "подключение…" : "офлайн"}</Text>
         </View>
         <Pressable onPress={logout} style={styles.logoutPill}>
           <Text style={styles.wsText}>Выйти</Text>
         </Pressable>
       </SafeAreaView>
 
-      {/* ───── Bottom sheet ───── */}
+      {/* ── Bottom sheet ── */}
       <View style={[styles.sheet, sheetStyle]}>
 
-        {/* Ручка — свайп вниз/вверх и тап для переключения */}
+        {/* Ручка */}
         {!activeField && (
-          <View
-            {...panResponder.panHandlers}
-            style={styles.handleWrap}
-            onStartShouldSetResponder={() => false}
-          >
+          <View {...panResponder.panHandlers} style={styles.handleWrap}>
             <Pressable onPress={() => setSheetExpanded((v) => !v)} hitSlop={10}>
               <View style={styles.handle} />
               <Text style={styles.handleArrow}>{sheetExpanded ? "▼" : "▲  развернуть"}</Text>
@@ -406,7 +391,6 @@ export default function MainScreen() {
         {/* ══ РЕЖИМ ПОИСКА ══ */}
         {activeField && (
           <View style={styles.searchContainer}>
-            {/* Шапка с инпутом */}
             <View style={styles.searchHeader}>
               <Pressable onPress={closeSearch} style={styles.searchBackBtn} hitSlop={12}>
                 <Text style={styles.searchBackText}>←</Text>
@@ -419,7 +403,6 @@ export default function MainScreen() {
                 placeholderTextColor={colors.textMuted}
                 autoFocus
                 returnKeyType="search"
-                clearButtonMode="never"
               />
               {activeText.length > 0 && (
                 <Pressable onPress={clearActive} style={styles.searchClearBtn} hitSlop={8}>
@@ -428,40 +411,34 @@ export default function MainScreen() {
               )}
             </View>
             <View style={styles.searchDivider} />
-
-            {/* Подсказки */}
-            {activeSugLoading ? (
-              <ActivityIndicator color={colors.textMuted} style={{ marginTop: 24 }} />
-            ) : (
-              <FlatList
-                data={activeSug}
-                keyExtractor={(_, i) => String(i)}
-                keyboardShouldPersistTaps="always"
-                style={styles.sugScroll}
-                renderItem={({ item, index }) => (
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.sugRow,
-                      index < activeSug.length - 1 && styles.sugRowSep,
-                      pressed && { backgroundColor: colors.cardAlt },
-                    ]}
-                    onPress={() => selectSug(item)}
-                  >
-                    <Text style={styles.sugIcon}>📍</Text>
-                    <Text style={styles.sugRowText} numberOfLines={2}>{item.label}</Text>
-                  </Pressable>
-                )}
-                ListEmptyComponent={
-                  <Text style={styles.sugHint}>
-                    {activeText.length >= 3
-                      ? "Адреса не найдены — уточните запрос"
-                      : activeField === "pickup"
-                        ? "Введите адрес или название места откуда едете"
-                        : "Введите адрес или название места куда едете"}
-                  </Text>
-                }
-              />
-            )}
+            {activeSugLoading
+              ? <ActivityIndicator color={colors.textMuted} style={{ marginTop: 24 }} />
+              : (
+                <FlatList
+                  data={activeSug}
+                  keyExtractor={(_, i) => String(i)}
+                  keyboardShouldPersistTaps="always"
+                  style={styles.sugScroll}
+                  renderItem={({ item, index }) => (
+                    <Pressable
+                      style={({ pressed }) => [styles.sugRow, index < activeSug.length - 1 && styles.sugRowSep, pressed && { backgroundColor: colors.cardAlt }]}
+                      onPress={() => selectSug(item)}
+                    >
+                      <Text style={styles.sugIcon}>📍</Text>
+                      <Text style={styles.sugRowText} numberOfLines={2}>{item.label}</Text>
+                    </Pressable>
+                  )}
+                  ListEmptyComponent={
+                    <Text style={styles.sugHint}>
+                      {activeText.length >= 1
+                        ? "Адреса не найдены — уточните запрос"
+                        : activeField === "pickup"
+                          ? "Введите адрес или название места откуда едете"
+                          : "Введите адрес или название места куда едете"}
+                    </Text>
+                  }
+                />
+              )}
           </View>
         )}
 
@@ -469,29 +446,38 @@ export default function MainScreen() {
         {!activeField && sheetExpanded && tab === "create" && (
           <ScrollView contentContainerStyle={styles.sheetInner} keyboardShouldPersistTaps="handled">
 
-            {/* Откуда — тап открывает поиск, текст авто-заполняется с пина */}
-            <Pressable style={styles.addrRowDisplay} onPress={() => openSearch("pickup")}>
-              <View style={[styles.dot, { backgroundColor: colors.danger }]} />
-              <Text
-                style={[styles.addrDisplayText, !pickupAddr && styles.addrPlaceholder]}
-                numberOfLines={1}
-              >
-                {pickupAddr || "Откуда поедете"}
-              </Text>
-              <Text style={styles.addrChevron}>›</Text>
-            </Pressable>
+            {/* Откуда — пустое по умолчанию, кнопка "С карты" справа */}
+            <View style={styles.addrRowWrap}>
+              <Pressable style={styles.addrRowMain} onPress={() => openSearch("pickup")}>
+                <View style={[styles.dot, { backgroundColor: colors.danger }]} />
+                <Text style={[styles.addrDisplayText, !pickupAddr && styles.addrPlaceholder]} numberOfLines={1}>
+                  {pickupAddr || "Откуда поедете"}
+                </Text>
+              </Pressable>
+              <Pressable style={styles.fromMapBtn} onPress={useCenterForPickup}>
+                <Text style={styles.fromMapBtnText}>📍 С карты</Text>
+              </Pressable>
+            </View>
 
-            {/* Куда — тап открывает поиск */}
+            {/* Куда — только поиск */}
             <Pressable style={styles.addrRowDisplay} onPress={() => openSearch("dropoff")}>
               <View style={[styles.dot, { backgroundColor: colors.info }]} />
-              <Text
-                style={[styles.addrDisplayText, !dropoffAddr && styles.addrPlaceholder]}
-                numberOfLines={1}
-              >
+              <Text style={[styles.addrDisplayText, !dropoffAddr && styles.addrPlaceholder]} numberOfLines={1}>
                 {dropoffAddr || "Куда поедете"}
               </Text>
               <Text style={styles.addrChevron}>›</Text>
             </Pressable>
+
+            {/* Маршрут: км + время */}
+            {routeInfo && (
+              <View style={styles.routeInfo}>
+                <Text style={styles.routeInfoText}>
+                  🛣 {formatDistance(routeInfo.distanceM)}
+                  {"   "}
+                  ⏱ {formatDuration(routeInfo.durationS)}
+                </Text>
+              </View>
+            )}
 
             {/* Классы */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }} contentContainerStyle={{ paddingVertical: 4 }}>
@@ -500,7 +486,7 @@ export default function MainScreen() {
                   key={c.id} icon={c.icon} label={c.label}
                   priceHint={c.id === carClass && quote ? formatMoney(quote.fare_total) : c.priceHint}
                   selected={carClass === c.id}
-                  onPress={() => { setCarClass(c.id); setQuote(null); }}
+                  onPress={() => setCarClass(c.id)}
                 />
               ))}
             </ScrollView>
@@ -512,17 +498,17 @@ export default function MainScreen() {
               style={styles.comment}
             />
 
-            <View style={{ flexDirection: "row", marginTop: 10 }}>
-              <Pressable onPress={doQuote} style={[styles.secondary, { flex: 1, marginRight: 8 }]} disabled={busy}>
-                <Text style={styles.secondaryText}>Рассчитать</Text>
-              </Pressable>
-              <Pressable onPress={doCreate} style={[styles.primary, { flex: 1 }]} disabled={busy}>
-                {busy
-                  ? <ActivityIndicator color={colors.accentText} />
-                  : <Text style={styles.primaryText}>{orderBtnText}</Text>
-                }
-              </Pressable>
-            </View>
+            {/* Одна кнопка ЗАКАЗАТЬ с ценой */}
+            <Pressable
+              onPress={doCreate}
+              style={[styles.primary, { marginTop: 10 }, !orderBtnReady && styles.primaryDisabled]}
+              disabled={busy || !orderBtnReady}
+            >
+              {busy
+                ? <ActivityIndicator color={colors.accentText} />
+                : <Text style={styles.primaryText}>{orderBtnText}</Text>
+              }
+            </Pressable>
 
             {!!status && <Text style={styles.statusTxt}>{status}</Text>}
           </ScrollView>
@@ -530,14 +516,13 @@ export default function MainScreen() {
 
         {!activeField && sheetExpanded && tab === "ride"    && <RideTab order={currentOrder} onRefresh={refreshState} />}
         {!activeField && sheetExpanded && tab === "history" && <HistoryTab items={history} />}
-
         {!activeField && <NavBar active={tab} onChange={setTab} />}
       </View>
     </View>
   );
 }
 
-/* ─── Вкладка активного заказа ─── */
+/* ─── Вкладка заказа ─── */
 function RideTab({ order, onRefresh }) {
   const [text, setText] = useState("");
   const [messages, setMessages] = useState([]);
@@ -627,11 +612,6 @@ function HistoryTab({ items }) {
   );
 }
 
-function formatMoney(v) { return `${Math.round(Number(v || 0)).toLocaleString("ru-RU")} ₽`; }
-function humanStatus(s) {
-  return ({ created:"новый", searching_driver:"ищем водителя", accepted:"водитель назначен", driver_on_the_way:"водитель в пути", driver_nearby_leave_now:"водитель рядом", arrived:"водитель на месте", ride_in_progress:"поездка идёт", completed:"поездка завершена", cancelled:"отменён" }[s] || s || "—");
-}
-
 /* ─── Стили ─── */
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
@@ -644,7 +624,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: "rgba(255,255,255,0.08)",
   },
   addrBarLabel: { color: colors.textMuted, fontSize: 11, fontWeight: "600", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 2 },
-  addrBarText: { color: colors.text, fontSize: 16, fontWeight: "800", textAlign: "center" },
+  addrBarText: { color: colors.text, fontSize: 15, fontWeight: "800", textAlign: "center" },
 
   pinOverlay: { position: "absolute", left: 0, right: 0, top: SCREEN_H * 0.30, alignItems: "center", zIndex: 10 },
 
@@ -654,26 +634,33 @@ const styles = StyleSheet.create({
   wsDot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
   wsText: { color: colors.text, fontSize: 12, fontWeight: "600" },
 
-  /* Sheet */
   sheet: {
-    position: "absolute", left: 0, right: 0, bottom: 0,
+    position: "absolute", left: 0, right: 0,
     backgroundColor: colors.sheet,
     borderTopLeftRadius: 26, borderTopRightRadius: 26,
-    maxHeight: "62%",
-    paddingTop: 0, zIndex: 20,
+    zIndex: 20,
   },
 
   handleWrap: { alignItems: "center", paddingVertical: 8 },
-  handle: { width: 44, height: 4, borderRadius: 2, backgroundColor: colors.border },
-  handleArrow: { color: colors.textMuted, fontSize: 11, fontWeight: "600", marginTop: 4, letterSpacing: 0.5 },
+  handle: { width: 44, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: "center" },
+  handleArrow: { color: colors.textMuted, fontSize: 11, fontWeight: "600", marginTop: 4, textAlign: "center", letterSpacing: 0.5 },
 
   sheetInner: { padding: 14, paddingBottom: 20 },
 
-  /* Тапабельные строки адреса в обычном режиме */
+  /* Строки адреса */
+  addrRowWrap: {
+    flexDirection: "row", alignItems: "center",
+    marginBottom: 8,
+  },
+  addrRowMain: {
+    flex: 1, flexDirection: "row", alignItems: "center",
+    backgroundColor: colors.card, borderRadius: radius.lg,
+    paddingHorizontal: 14, paddingVertical: 14,
+    marginRight: 8,
+  },
   addrRowDisplay: {
     flexDirection: "row", alignItems: "center",
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
+    backgroundColor: colors.card, borderRadius: radius.lg,
     paddingHorizontal: 14, paddingVertical: 14,
     marginBottom: 8,
   },
@@ -682,51 +669,42 @@ const styles = StyleSheet.create({
   addrPlaceholder: { color: colors.textMuted },
   addrChevron: { color: colors.textMuted, fontSize: 20, marginLeft: 8 },
 
-  /* ── Режим поиска ── */
+  /* Кнопка "С карты" */
+  fromMapBtn: {
+    backgroundColor: colors.card, borderRadius: radius.md,
+    paddingHorizontal: 10, paddingVertical: 14,
+    alignItems: "center", justifyContent: "center",
+  },
+  fromMapBtnText: { color: colors.info, fontSize: 12, fontWeight: "700" },
+
+  /* Инфо о маршруте */
+  routeInfo: {
+    backgroundColor: colors.cardAlt, borderRadius: radius.md,
+    paddingVertical: 8, paddingHorizontal: 14,
+    marginBottom: 6, alignItems: "center",
+  },
+  routeInfoText: { color: colors.text, fontSize: 13, fontWeight: "600" },
+
+  /* Поиск */
   searchContainer: { flex: 1 },
-  searchHeader: {
-    flexDirection: "row", alignItems: "center",
-    paddingHorizontal: 12, paddingVertical: 10,
-    paddingTop: 16,
-  },
-  searchBackBtn: {
-    width: 40, height: 40,
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    alignItems: "center", justifyContent: "center",
-    marginRight: 10,
-  },
+  searchHeader: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 10, paddingTop: 16 },
+  searchBackBtn: { width: 40, height: 40, backgroundColor: colors.card, borderRadius: radius.md, alignItems: "center", justifyContent: "center", marginRight: 10 },
   searchBackText: { color: colors.text, fontSize: 20, lineHeight: 24 },
-  searchInput: {
-    flex: 1,
-    backgroundColor: colors.card,
-    color: colors.text,
-    fontSize: 16,
-    borderRadius: radius.md,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  searchClearBtn: {
-    width: 36, height: 36,
-    alignItems: "center", justifyContent: "center",
-    marginLeft: 8,
-  },
+  searchInput: { flex: 1, backgroundColor: colors.card, color: colors.text, fontSize: 16, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 12 },
+  searchClearBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center", marginLeft: 8 },
   searchClearText: { color: colors.textMuted, fontSize: 18 },
   searchDivider: { height: 1, backgroundColor: colors.border, marginTop: 4 },
-
   sugScroll: { flex: 1 },
-  sugRow: {
-    flexDirection: "row", alignItems: "flex-start",
-    paddingHorizontal: 16, paddingVertical: 14,
-  },
+  sugRow: { flexDirection: "row", alignItems: "flex-start", paddingHorizontal: 16, paddingVertical: 14 },
   sugRowSep: { borderBottomWidth: 1, borderBottomColor: colors.border },
   sugIcon: { fontSize: 16, marginRight: 10, marginTop: 1 },
   sugRowText: { flex: 1, color: colors.text, fontSize: 15, lineHeight: 20 },
   sugHint: { color: colors.textMuted, fontSize: 14, textAlign: "center", marginTop: 30, paddingHorizontal: 24, lineHeight: 20 },
 
-  /* Остальные стили формы */
+  /* Форма */
   comment: { marginTop: 10, backgroundColor: colors.card, color: colors.text, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14 },
-  primary: { backgroundColor: colors.accent, borderRadius: radius.md, paddingVertical: 14, alignItems: "center", justifyContent: "center" },
+  primary: { backgroundColor: colors.accent, borderRadius: radius.md, paddingVertical: 16, alignItems: "center", justifyContent: "center" },
+  primaryDisabled: { backgroundColor: colors.cardAlt },
   primaryText: { color: colors.accentText, fontWeight: "800", fontSize: 15 },
   secondary: { backgroundColor: colors.cardAlt, borderRadius: radius.md, paddingVertical: 14, alignItems: "center", justifyContent: "center" },
   secondaryText: { color: colors.text, fontWeight: "700", fontSize: 14 },

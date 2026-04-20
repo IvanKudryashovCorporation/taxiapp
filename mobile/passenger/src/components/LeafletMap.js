@@ -65,6 +65,28 @@ const LeafletMap = forwardRef(function LeafletMap(
       `;
       webviewRef.current?.injectJavaScript(js);
     },
+    // Жёлтая линия маршрута
+    setRoute(coords) {
+      const latlngs = JSON.stringify(coords);
+      webviewRef.current?.injectJavaScript(`
+        if (window._routeLayer) map.removeLayer(window._routeLayer);
+        window._routeLayer = L.polyline(${latlngs}, {
+          color: '#F5CF31',
+          weight: 5,
+          opacity: 0.85,
+          lineJoin: 'round',
+        }).addTo(map);
+        map.fitBounds(window._routeLayer.getBounds(), {padding: [60, 60]});
+        true;
+      `);
+    },
+    clearRoute() {
+      webviewRef.current?.injectJavaScript(`
+        if (window._routeLayer) { map.removeLayer(window._routeLayer); window._routeLayer = null; }
+        true;
+      `);
+    },
+
     // Синяя точка геопозиции пользователя
     setUserLocation(lat, lon) {
       const js = `

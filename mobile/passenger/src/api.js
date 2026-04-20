@@ -222,6 +222,29 @@ export async function geocodeSearch(query, nearLat, nearLon, cityName) {
   }
 }
 
+// OSRM маршрут между двумя точками
+export async function getRoute(pickupLat, pickupLon, dropoffLat, dropoffLon) {
+  try {
+    const url =
+      `https://router.project-osrm.org/route/v1/driving/` +
+      `${pickupLon},${pickupLat};${dropoffLon},${dropoffLat}`;
+    const r = await axios.get(url, {
+      params: { overview: "full", geometries: "geojson" },
+      timeout: 10000,
+      headers: { "User-Agent": "RassvetPassenger/1.0" },
+    });
+    const route = r.data?.routes?.[0];
+    if (!route) return null;
+    return {
+      distanceM: route.distance,                                      // метры
+      durationS: route.duration,                                      // секунды
+      coords: route.geometry.coordinates.map(([lon, lat]) => [lat, lon]), // → [lat,lon]
+    };
+  } catch {
+    return null;
+  }
+}
+
 // City search (for CityScreen — Russian cities/towns)
 export async function searchCity(query) {
   try {
