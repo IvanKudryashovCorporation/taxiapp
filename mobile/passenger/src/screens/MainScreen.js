@@ -10,6 +10,8 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Keyboard,
+  Platform,
 } from "react-native";
 import * as Location from "expo-location";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -91,6 +93,20 @@ export default function MainScreen() {
 
   const [tab,           setTab]           = useState(currentOrder ? "ride" : "create");
   const [sheetExpanded, setSheetExpanded] = useState(true);
+  const [keyboardH,     setKeyboardH]     = useState(0);
+
+  // Поднимаем шторку над клавиатурой
+  useEffect(() => {
+    const show = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      (e) => setKeyboardH(e.endCoordinates.height)
+    );
+    const hide = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      () => setKeyboardH(0)
+    );
+    return () => { show.remove(); hide.remove(); };
+  }, []);
 
   // ── Активное поисковое поле: null | "pickup" | "dropoff"
   const [activeField,      setActiveField]      = useState(null);
@@ -344,7 +360,7 @@ export default function MainScreen() {
       </SafeAreaView>
 
       {/* ───── Bottom sheet ───── */}
-      <View style={[styles.sheet, activeField && styles.sheetSearch]}>
+      <View style={[styles.sheet, activeField && styles.sheetSearch, { bottom: keyboardH }]}>
 
         {/* Ручка — только когда не в режиме поиска */}
         {!activeField && (
@@ -614,7 +630,8 @@ const styles = StyleSheet.create({
     paddingTop: 0, zIndex: 20,
   },
   sheetSearch: {
-    maxHeight: "88%",  // шторка раскрывается почти на весь экран в режиме поиска
+    // Высота = весь экран минус клавиатура (bottom подставляется динамически)
+    maxHeight: SCREEN_H * 0.92,
   },
 
   handleWrap: { alignItems: "center", paddingVertical: 8 },
