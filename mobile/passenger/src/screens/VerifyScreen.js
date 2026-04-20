@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../api";
+import { useStore } from "../state";
 import { colors, radius } from "../theme";
 
 export default function VerifyScreen({ route, navigation }) {
