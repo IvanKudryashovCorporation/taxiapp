@@ -109,14 +109,14 @@ export default function CityScreen({ navigation }) {
   /* ── Подтвердить определённый город ── */
   const confirmDetected = async () => {
     await setCity({ name: detected.name, lat: detected.lat, lon: detected.lon });
-    navigation.reset({ index: 0, routes: [{ name: "Main" }] });
+    // App.js (conditional stack) автоматически откроет Main при cityLat != null
   };
 
   /* ── Выбрать из списка ── */
   const selectCity = async (city) => {
     const name = city.name || city.label;
     await setCity({ name, lat: city.lat, lon: city.lon });
-    navigation.reset({ index: 0, routes: [{ name: "Main" }] });
+    // App.js (conditional stack) автоматически откроет Main при cityLat != null
   };
 
   /* ── Поиск ── */

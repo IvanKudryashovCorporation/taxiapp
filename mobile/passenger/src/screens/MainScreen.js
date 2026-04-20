@@ -153,6 +153,7 @@ export default function MainScreen() {
   const initLon = cityLon || DEFAULT_LON;
 
   const [tab, setTab] = useState(currentOrder ? "ride" : "create");
+  const [sheetExpanded, setSheetExpanded] = useState(true);
   const [centerLat, setCenterLat] = useState(initLat);
   const [centerLon, setCenterLon] = useState(initLon);
   const [geocoding, setGeocoding] = useState(false);
@@ -219,13 +220,12 @@ export default function MainScreen() {
     return () => { cancelled = true; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Маркеры заказа на карте
+  // Маркер на карте — только точка Б (точку А показывает пин-оверлей, маркер не нужен)
   useEffect(() => {
     const markers = [];
-    if (pickupLat != null) markers.push({ lat: pickupLat, lon: pickupLon, color: "#FF5A4D", label: "А" });
     if (dropoffLat != null) markers.push({ lat: dropoffLat, lon: dropoffLon, color: "#5CB8FF", label: "Б" });
     mapRef.current?.setMarkers(markers);
-  }, [pickupLat, pickupLon, dropoffLat, dropoffLon]);
+  }, [dropoffLat, dropoffLon]);
 
   // ── Карта двигается → авто-заполнение «Откуда» ──
   const handleCenterChange = useCallback((lat, lon) => {
@@ -412,9 +412,20 @@ export default function MainScreen() {
 
       {/* Bottom sheet */}
       <View style={styles.sheet}>
-        <View style={styles.handle} />
 
-        {tab === "create" && (
+        {/* Ручка — нажатие сворачивает / разворачивает */}
+        <Pressable
+          onPress={() => setSheetExpanded((v) => !v)}
+          style={styles.handleWrap}
+          hitSlop={12}
+        >
+          <View style={styles.handle} />
+          <Text style={styles.handleArrow}>
+            {sheetExpanded ? "▼" : "▲  развернуть"}
+          </Text>
+        </Pressable>
+
+        {sheetExpanded && tab === "create" && (
           <ScrollView
             contentContainerStyle={styles.sheetInner}
             keyboardShouldPersistTaps="handled"
@@ -500,8 +511,8 @@ export default function MainScreen() {
           </ScrollView>
         )}
 
-        {tab === "ride" && <RideTab order={currentOrder} onRefresh={refreshState} />}
-        {tab === "history" && <HistoryTab items={history} />}
+        {sheetExpanded && tab === "ride" && <RideTab order={currentOrder} onRefresh={refreshState} />}
+        {sheetExpanded && tab === "history" && <HistoryTab items={history} />}
 
         <NavBar active={tab} onChange={setTab} />
       </View>
@@ -821,13 +832,22 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     zIndex: 20,
   },
+  handleWrap: {
+    alignItems: "center",
+    paddingVertical: 8,
+  },
   handle: {
-    alignSelf: "center",
     width: 44,
     height: 4,
     borderRadius: 2,
     backgroundColor: colors.border,
-    marginBottom: 8,
+  },
+  handleArrow: {
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: "600",
+    marginTop: 4,
+    letterSpacing: 0.5,
   },
   sheetInner: { padding: 14, paddingBottom: 20 },
 

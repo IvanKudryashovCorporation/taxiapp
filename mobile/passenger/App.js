@@ -53,14 +53,26 @@ export default function App() {
       <SafeAreaProvider>
         <StatusBar style="light" />
         <NavigationContainer theme={navTheme}>
+          {/*
+           * Conditional stack — реагирует на изменения стейта в реальном времени:
+           *  · нет токена  → экраны входа (Login / Verify)
+           *  · есть токен, нет города → CityScreen
+           *  · всё есть   → Main
+           * Так logout() мгновенно бросает на Login без ручной навигации.
+           */}
           <Stack.Navigator
             screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}
-            initialRouteName={token ? (cityLat ? "Main" : "City") : "Login"}
           >
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Verify" component={VerifyScreen} />
-            <Stack.Screen name="City" component={CityScreen} />
-            <Stack.Screen name="Main" component={MainScreen} />
+            {!token ? (
+              <>
+                <Stack.Screen name="Login" component={LoginScreen} />
+                <Stack.Screen name="Verify" component={VerifyScreen} />
+              </>
+            ) : !cityLat ? (
+              <Stack.Screen name="City" component={CityScreen} />
+            ) : (
+              <Stack.Screen name="Main" component={MainScreen} />
+            )}
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaProvider>
