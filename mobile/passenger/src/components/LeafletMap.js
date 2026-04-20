@@ -57,8 +57,44 @@ const LeafletMap = forwardRef(function LeafletMap(
     },
     setMarkers(newMarkers) {
       const js = `
-        map.eachLayer(function(l){if(l instanceof L.CircleMarker)map.removeLayer(l);});
+        map.eachLayer(function(l){
+          if(l instanceof L.CircleMarker && !l._isUserDot) map.removeLayer(l);
+        });
         ${newMarkers.map((m) => `L.circleMarker([${m.lat},${m.lon}],{radius:10,color:'${m.color||"red"}',fillColor:'${m.color||"red"}',fillOpacity:0.9}).addTo(map).bindPopup(${JSON.stringify(m.label||"")});`).join("\n")}
+        true;
+      `;
+      webviewRef.current?.injectJavaScript(js);
+    },
+    // Синяя точка геопозиции пользователя
+    setUserLocation(lat, lon) {
+      const js = `
+        (function(){
+          if(window._userDot) { map.removeLayer(window._userDot); }
+          if(window._userRing) { map.removeLayer(window._userRing); }
+
+          // Внешнее кольцо (пульс)
+          window._userRing = L.circleMarker([${lat},${lon}], {
+            radius: 14,
+            color: '#4285F4',
+            fillColor: '#4285F4',
+            fillOpacity: 0.15,
+            weight: 1.5,
+            opacity: 0.5,
+          });
+          window._userRing._isUserDot = true;
+          window._userRing.addTo(map);
+
+          // Центральная точка
+          window._userDot = L.circleMarker([${lat},${lon}], {
+            radius: 7,
+            color: '#fff',
+            fillColor: '#4285F4',
+            fillOpacity: 1,
+            weight: 2.5,
+          });
+          window._userDot._isUserDot = true;
+          window._userDot.addTo(map);
+        })();
         true;
       `;
       webviewRef.current?.injectJavaScript(js);

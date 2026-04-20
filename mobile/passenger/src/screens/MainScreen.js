@@ -125,30 +125,54 @@ export default function MainScreen() {
     if (cityLat) mapRef.current?.setCenter(cityLat, cityLon, 13);
   }, [cityLat, cityLon]);
 
-  // GPS — двухэтапный, независимо от карты
+  // GPS — непрерывное слежение, синяя точка на карте
   useEffect(() => {
     let cancelled = false;
+    let subscription = null;
+    let hasInitialCenter = false;
+
     (async () => {
       try {
         const { status: perm } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted" || cancelled) return;
+        if (perm !== "granted" || cancelled) return;
 
-        // Шаг 1: последняя известная (мгновенно)
+        // Шаг 1: последняя известная позиция (мгновенно)
         const last = await Location.getLastKnownPositionAsync();
         if (last && !cancelled) {
           const { latitude: lat, longitude: lon } = last.coords;
           mapRef.current?.setCenter(lat, lon, 15);
+          mapRef.current?.setUserLocation(lat, lon);
+          hasInitialCenter = true;
         }
-        // Шаг 2: точная
-        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        if (!pos || cancelled) return;
-        const { latitude: lat, longitude: lon } = pos.coords;
-        mapRef.current?.setCenter(lat, lon, 15);
+
+        // Шаг 2: непрерывное слежение
+        subscription = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.Balanced,
+            timeInterval: 3000,   // обновлять не чаще раз в 3 сек
+            distanceInterval: 5,  // и только при сдвиге > 5 метров
+          },
+          (pos) => {
+            if (cancelled) return;
+            const { latitude: lat, longitude: lon } = pos.coords;
+            // Синяя точка обновляется всегда
+            mapRef.current?.setUserLocation(lat, lon);
+            // Центрировать карту только при первом фиксе
+            if (!hasInitialCenter) {
+              hasInitialCenter = true;
+              mapRef.current?.setCenter(lat, lon, 15);
+            }
+          }
+        );
       } catch (e) {
         console.warn("GPS:", e?.message);
       }
     })();
-    return () => { cancelled = true; };
+
+    return () => {
+      cancelled = true;
+      subscription?.remove();
+    };
   }, []); // eslint-disable-line
 
   // Только маркер Б на карте (А показывает пин)
