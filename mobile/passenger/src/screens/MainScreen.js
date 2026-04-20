@@ -181,27 +181,43 @@ export default function MainScreen() {
     if (!currentOrder && tab === "ride") setTab("create");
   }, [currentOrder]);
 
-  // Карта готова → центрируем на городе, потом пробуем GPS
+  // Карта готова → центрируем на городе (быстро)
   const handleMapReady = useCallback(() => {
+    if (cityLat) {
+      mapRef.current?.setCenter(cityLat, cityLon, 13);
+    }
+  }, [cityLat, cityLon]);
+
+  // GPS — независимо от карты, двухэтапный (быстро + точно)
+  useEffect(() => {
+    let cancelled = false;
+
     (async () => {
-      // Сначала — на город
-      if (cityLat) {
-        mapRef.current?.setCenter(cityLat, cityLon, 13);
-      }
-      // Потом GPS
       try {
-        const { status: perm } = await Location.requestForegroundPermissionsAsync();
-        if (perm !== "granted") return;
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted" || cancelled) return;
+
+        // Шаг 1: последняя известная позиция (мгновенно)
+        const last = await Location.getLastKnownPositionAsync();
+        if (last && !cancelled) {
+          const { latitude: lat, longitude: longitude } = last.coords;
+          mapRef.current?.setCenter(lat, longitude, 15);
+        }
+
+        // Шаг 2: точная позиция
         const pos = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
         });
-        const lat = pos.coords.latitude;
-        const lon = pos.coords.longitude;
-        mapRef.current?.setCenter(lat, lon, 15);
-        // reverseGeocode запустится через onCenterChange автоматически
-      } catch {}
+        if (!pos || cancelled) return;
+        const { latitude: lat, longitude: longitude } = pos.coords;
+        mapRef.current?.setCenter(lat, longitude, 15);
+      } catch (e) {
+        console.warn("GPS:", e?.message);
+      }
     })();
-  }, [cityLat, cityLon]);
+
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Маркеры заказа на карте
   useEffect(() => {

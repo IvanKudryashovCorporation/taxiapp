@@ -133,6 +133,23 @@ export const api = {
   },
 };
 
+// Определить город по координатам (zoom=10 = уровень города)
+export async function reverseGeocodeCity(lat, lon) {
+  try {
+    const r = await axios.get("https://nominatim.openstreetmap.org/reverse", {
+      params: { lat, lon, format: "json", "accept-language": "ru", zoom: 10, addressdetails: 1 },
+      timeout: 8000,
+      headers: { "User-Agent": "RassvetPassenger/1.0" },
+    });
+    const a = r.data?.address || {};
+    const name = a.city || a.town || a.village || a.county || a.state;
+    if (!name) return null;
+    return { name, lat, lon };
+  } catch {
+    return null;
+  }
+}
+
 // Nominatim (OpenStreetMap) reverse geocoding
 export async function reverseGeocode(lat, lon) {
   try {
