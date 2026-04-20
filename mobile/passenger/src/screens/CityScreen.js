@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Location from "expo-location";
 import { useStore } from "../state";
-import { searchCity, reverseGeocodeCity } from "../api";
+import { reverseGeocodeCity } from "../api";
 import { colors, radius } from "../theme";
 
 const POPULAR = [
@@ -67,8 +67,6 @@ export default function CityScreen({ navigation }) {
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const timer = useRef(null);
 
   /* ── Авто-определение при открытии ── */
   useEffect(() => {
@@ -119,20 +117,20 @@ export default function CityScreen({ navigation }) {
     // App.js (conditional stack) автоматически откроет Main при cityLat != null
   };
 
-  /* ── Поиск ── */
+  /* ── Локальный поиск по списку POPULAR ── */
   const onSearch = (text) => {
     setQuery(text);
-    clearTimeout(timer.current);
-    if (text.trim().length < 2) { setResults([]); return; }
-    setSearchLoading(true);
-    timer.current = setTimeout(async () => {
-      const res = await searchCity(text.trim());
-      setResults(res);
-      setSearchLoading(false);
-    }, 500);
+    const q = text.trim().toLowerCase();
+    if (q.length < 1) { setResults([]); return; }
+    const filtered = POPULAR.filter(
+      (c) =>
+        c.label.toLowerCase().includes(q) ||
+        c.region.toLowerCase().includes(q)
+    );
+    setResults(filtered);
   };
 
-  const displayList = query.trim().length >= 2 ? results : POPULAR;
+  const displayList = query.trim().length >= 1 ? results : POPULAR;
 
   /* ── Рендер ── */
   return (
@@ -193,12 +191,9 @@ export default function CityScreen({ navigation }) {
                 autoFocus
                 returnKeyType="search"
               />
-              {searchLoading && (
-                <ActivityIndicator color={colors.textMuted} style={{ marginRight: 8 }} />
-              )}
             </View>
 
-            {query.trim().length >= 2 && !searchLoading && results.length === 0 && (
+            {query.trim().length >= 1 && results.length === 0 && (
               <Text style={styles.empty}>
                 Город не найден. Попробуйте другое написание.
               </Text>
