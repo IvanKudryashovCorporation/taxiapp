@@ -1,0 +1,114 @@
+import { WS_URL } from "./config";
+
+export class PassengerSocket {
+  constructor({ onEvent, onStateChange } = {}) {
+    this.onEvent = onEvent || (() => {});
+    this.onStateChange = onStateChange || (() => {});
+    this.ws = null;
+    this.token = null;
+    this.reconnectTimer = null;
+    this.pingTimer = null;
+    this.subscriptions = new Set();
+    this.state = "offline";
+  }
+
+  setToken(token) {
+    this.token = token;
+    if (this.ws) this.disconnect();
+    if (token) this.connect();
+  }
+
+  connect() {
+    if (!this.token) return;
+    this._setState("connecting");
+    try {
+      const url = `${WS_URL}?role=passenger&token=${encodeURIComponent(this.token)}`;
+      this.ws = new WebSocket(url);
+    } catch (e) {
+      this._scheduleReconnect();
+      return;
+    }
+    this.ws.onopen = () => {
+      this._setState("online");
+      this._startPing();
+      // Re-subscribe to known rooms
+      for (const orderId of this.subscriptions) this._send({ action: "subscribe_order", order_id: orderId });
+    };
+    this.ws.onmessage = (evt) => {
+      try {
+        const data = JSON.parse(evt.data);
+        this.onEvent(data);
+      } catch {}
+    };
+    this.ws.onerror = () => {
+      // onclose handles reconnect
+    };
+    this.ws.onclose = () => {
+      this._stopPing();
+      this._setState("offline");
+      this._scheduleReconnect();
+    };
+  }
+
+  disconnect() {
+    this._stopPing();
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    if (this.ws) {
+      try {
+        this.ws.close();
+      } catch {}
+      this.ws = null;
+    }
+    this._setState("offline");
+  }
+
+  subscribeOrder(orderId) {
+    if (!orderId) return;
+    this.subscriptions.add(orderId);
+    this._send({ action: "subscribe_order", order_id: orderId });
+  }
+
+  unsubscribeOrder(orderId) {
+    if (!orderId) return;
+    this.subscriptions.delete(orderId);
+    this._send({ action: "unsubscribe_order", order_id: orderId });
+  }
+
+  _send(payload) {
+    if (this.ws && this.ws.readyState === 1) {
+      try {
+        this.ws.send(JSON.stringify(payload));
+      } catch {}
+    }
+  }
+
+  _startPing() {
+    this._stopPing();
+    this.pingTimer = setInterval(() => this._send({ action: "ping" }), 25000);
+  }
+
+  _stopPing() {
+    if (this.pingTimer) {
+      clearInterval(this.pingTimer);
+      this.pingTimer = null;
+    }
+  }
+
+  _scheduleReconnect() {
+    if (this.reconnectTimer || !this.token) return;
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.connect();
+    }, 3000);
+  }
+
+  _setState(next) {
+    if (this.state !== next) {
+      this.state = next;
+      this.onStateChange(next);
+    }
+  }
+}

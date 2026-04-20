@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "Профсоюз Рассвет — Пассажир",
+    "slug": "passenger-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#0F121C"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "ru.rassvet.passenger",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Нужно для определения места подачи и отслеживания маршрута"
+      },
+      "config": {
+        "googleMapsApiKey": ""
+      }
+    },
+    "android": {
+      "package": "ru.rassvet.passenger",
+      "adaptiveIcon": {
+        "backgroundColor": "#0F121C"
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": ""
+        }
+      }
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Приложение использует местоположение для подачи такси"
+        }
+      ],
+      "expo-asset"
+    ],
+    "extra": {
+      "backendUrl": "http://127.0.0.1:8000"
+    }
+  }
+}

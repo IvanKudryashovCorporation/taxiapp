@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "Профсоюз Рассвет — Водитель",
+    "slug": "driver-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#0F121C"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "ru.rassvet.driver",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Нужно для отправки текущего местоположения диспетчеру",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Нужно для работы навигации во время поездки",
+        "UIBackgroundModes": [
+          "location"
+        ]
+      }
+    },
+    "android": {
+      "package": "ru.rassvet.driver",
+      "adaptiveIcon": {
+        "backgroundColor": "#0F121C"
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Для работы сервиса нужно знать местоположение водителя",
+          "isAndroidBackgroundLocationEnabled": true
+        }
+      ],
+      "expo-asset"
+    ],
+    "extra": {
+      "backendUrl": "http://127.0.0.1:8000"
+    }
+  }
+}

@@ -1,3 +1,5 @@
+Set-Location "$PSScriptRoot"
+
 if (-not $env:DATABASE_URL) {
     $env:DATABASE_URL = "postgresql://taxiapp:taxiapp@127.0.0.1:5432/taxiapp"
 }
@@ -12,4 +14,4 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
-python -m uvicorn backend.main:app --reload
+python -m uvicorn backend.main:app --reload --host 0.0.0.0

@@ -1,132 +1,799 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Профсоюз "Рассвет" | Диспетчерская</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Рассвет — Диспетчерская</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
   <style>
-    :root{--navy:#091935;--yellow:#f2c744;--bg:#eef3f8;--surface:rgba(255,255,255,.96);--surface2:#f7faff;--line:#dbe4f0;--text:#112240;--muted:#607590;--ok:#2f9b6d;--warn:#c08a12;--bad:#c74444;--shadow:0 16px 42px rgba(12,27,53,.08);--radius:24px;--radius-sm:16px}
-    *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at top left,rgba(242,199,68,.18),transparent 24%),linear-gradient(180deg,#f5f8fc 0%,var(--bg) 100%);color:var(--text);font-family:"Bahnschrift","Segoe UI Variable Text","Segoe UI",sans-serif}body{padding:18px}.page{max-width:1540px;margin:0 auto;display:grid;gap:14px}.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);backdrop-filter:blur(12px)}
-    .topbar{padding:18px 20px;display:grid;grid-template-columns:1.4fr .9fr;gap:16px;align-items:stretch}.brand-stack{display:flex;flex-direction:column;gap:10px}.eyebrow{display:inline-flex;align-items:center;width:fit-content;padding:8px 12px;border-radius:999px;background:#eef4ff;color:#3f5f92;font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:700}.brand-stack h1{margin:0;font-size:clamp(34px,4vw,58px);line-height:.94;color:var(--navy)}.brand-stack p{margin:0;max-width:760px;font-size:15px;line-height:1.5;color:var(--muted)}.stripe{width:188px;height:14px;border-radius:999px;background:repeating-linear-gradient(90deg,#2d364a 0 16px,#f3c93f 16px 32px)}
-    .status-grid,.signal-list,.stack,.details-grid{display:grid;gap:12px}.signal{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-radius:var(--radius-sm);background:var(--surface2);border:1px solid var(--line);font-size:14px}.signal strong{font-size:13px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.08em}.signal span:last-child{font-weight:700;color:var(--navy)}.signal.good{background:#effaf4;border-color:#d0eddc}.signal.good span:last-child{color:var(--ok)}.signal.warn{background:#fff8eb;border-color:#f0e0b9}.signal.warn span:last-child{color:var(--warn)}.signal.bad{background:#fff1f1;border-color:#f1d2d2}.signal.bad span:last-child{color:var(--bad)}
-    .stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}.stat{padding:16px;display:grid;gap:8px;min-height:124px}.stat span{color:var(--muted);font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:700}.stat b{font-size:clamp(28px,2vw,36px);line-height:1;color:var(--navy)}
-    .workspace{display:grid;grid-template-columns:340px minmax(0,1fr) 390px;gap:14px;align-items:start}.panel{padding:16px;display:grid;gap:12px}.panel-head{display:flex;align-items:end;justify-content:space-between;gap:12px}.panel-head h2,.panel h2{margin:0;color:var(--navy);font-size:20px;line-height:1.1}.micro{margin:0;color:var(--muted);font-size:13px;line-height:1.45}.form{display:grid;gap:10px}.row{display:flex;gap:10px;align-items:center}.row>*{min-width:0}
-    input,textarea,select,button{font:inherit}input,textarea,select{width:100%;border:1px solid var(--line);background:#fff;color:var(--text);padding:12px 14px;border-radius:16px;outline:none;transition:border-color .18s ease,box-shadow .18s ease}input:focus,textarea:focus,select:focus{border-color:#7ea0d5;box-shadow:0 0 0 3px rgba(80,118,190,.12)}textarea{min-height:86px;resize:vertical}.btn{border:none;border-radius:16px;padding:12px 16px;font-weight:800;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease}.btn:hover{transform:translateY(-1px)}.btn-main{background:var(--navy);color:#fff;box-shadow:0 12px 28px rgba(9,25,53,.2)}.btn-soft{background:#e8effa;color:var(--navy)}.btn-bad{background:#ffe4e4;color:#8f2323}.btn-warn{background:#fff2d8;color:#8a5b00}
-    .quote-box,.detail-box{background:var(--surface2);border:1px solid var(--line);border-radius:18px;padding:14px;color:var(--text);line-height:1.45}#map{height:560px;border-radius:22px;border:1px solid var(--line);overflow:hidden}.list{display:grid;gap:10px;max-height:352px;overflow:auto;padding-right:2px}.item{border:1px solid var(--line);border-radius:18px;padding:14px;background:#fff;display:grid;gap:8px;cursor:pointer;transition:border-color .18s ease,transform .15s ease,box-shadow .18s ease}.item:hover{transform:translateY(-1px);border-color:#9bb5da;box-shadow:0 10px 24px rgba(18,39,77,.07)}.item.active{border-color:#244b93;box-shadow:0 0 0 3px rgba(36,75,147,.1)}
-    .pill{display:inline-flex;align-items:center;padding:5px 10px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}.ok{background:#e4f7ec;color:#1f7a52}.soft{background:#edf3ff;color:#35558f}.warn{background:#fff1d9;color:#9b6100}.bad{background:#ffe0e0;color:#a12c2c}.mono{font-family:"Cascadia Mono","Consolas",monospace;font-size:13px}.chat{min-height:230px;max-height:330px;overflow:auto;border:1px solid var(--line);border-radius:18px;background:#f7faff;padding:12px;display:flex;flex-direction:column;gap:8px}.bubble{max-width:84%;padding:10px 12px;border-radius:18px;font-size:14px;line-height:1.45}.bubble.operator{align-self:flex-end;background:var(--navy);color:#fff}.bubble.driver{align-self:flex-start;background:#fff;border:1px solid var(--line);color:var(--text)}.compose{display:flex;gap:8px;align-items:stretch}.compose input{flex:1}.sticky{position:sticky;top:18px}
-    @media (max-width:1380px){.stats{grid-template-columns:repeat(3,minmax(0,1fr))}.workspace{grid-template-columns:1fr}.sticky{position:static}}@media (max-width:920px){body{padding:10px}.topbar{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}#map{height:420px}}
+    :root{
+      --bg:#0F121C; --s1:#171B28; --s2:#1E2235; --s3:#252A3D;
+      --b1:#252A3D; --b2:#2E3450;
+      --tx:#E2E8F4; --mu:#6B7A99; --di:#3D4766;
+      --ac:#F5CF31; --ac2:#E8BD1A;
+      --ok:#3FCF8E; --wn:#F5A623; --bd:#FF5A4D; --inf:#5B8AF5;
+      --r:14px; --rs:10px;
+      --sidebar:220px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;background:var(--bg);color:var(--tx);font-family:"Segoe UI Variable Text","Segoe UI","Inter",sans-serif;font-size:14px;line-height:1.5;overflow:hidden}
+    ::-webkit-scrollbar{width:4px;height:4px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:var(--b2);border-radius:99px}
+
+    /* ── App shell ── */
+    .app{display:grid;grid-template-columns:var(--sidebar) 1fr;height:100vh}
+
+    /* ── Sidebar ── */
+    .sidebar{
+      background:var(--s1);border-right:1px solid var(--b1);
+      display:flex;flex-direction:column;
+      padding:0;overflow:hidden;
+    }
+    .sidebar-brand{
+      padding:20px 18px 16px;
+      border-bottom:1px solid var(--b1);
+    }
+    .brand-badge{
+      display:inline-flex;align-items:center;gap:6px;
+      background:rgba(245,207,49,.1);color:var(--ac);
+      padding:4px 10px;border-radius:99px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+      margin-bottom:10px;
+    }
+    .brand-badge::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ac)}
+    .sidebar-brand h1{font-size:20px;font-weight:800;color:var(--tx);line-height:1.1}
+    .sidebar-brand h1 span{color:var(--ac)}
+    .sidebar-brand p{color:var(--mu);font-size:11px;margin-top:4px}
+
+    .sidebar-nav{flex:1;padding:12px 10px;display:flex;flex-direction:column;gap:3px;overflow-y:auto}
+    .nav-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--di);padding:10px 8px 5px}
+    .nav-item{
+      display:flex;align-items:center;gap:10px;
+      width:100%;padding:9px 10px;
+      border:none;border-radius:var(--rs);background:transparent;color:var(--mu);
+      font:inherit;font-size:13px;cursor:pointer;text-align:left;
+      transition:background .15s,color .15s;position:relative;
+    }
+    .nav-item:hover{background:var(--s2);color:var(--tx)}
+    .nav-item.active{background:rgba(245,207,49,.1);color:var(--ac);font-weight:700}
+    .nav-item .icon{width:18px;height:18px;flex-shrink:0;opacity:.7}
+    .nav-item.active .icon{opacity:1}
+    .nav-badge{
+      margin-left:auto;background:var(--bd);color:#fff;
+      font-size:10px;font-weight:800;min-width:18px;height:18px;
+      border-radius:99px;display:flex;align-items:center;justify-content:center;padding:0 5px;
+    }
+
+    .sidebar-status{
+      padding:14px 16px;border-top:1px solid var(--b1);
+      display:flex;flex-direction:column;gap:7px;
+    }
+    .status-row{
+      display:flex;align-items:center;justify-content:space-between;
+      font-size:11px;
+    }
+    .status-row strong{color:var(--mu);text-transform:uppercase;letter-spacing:.08em;font-size:10px}
+    .status-dot{
+      display:inline-flex;align-items:center;gap:5px;
+      font-weight:600;color:var(--mu);
+    }
+    .status-dot::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+    .status-dot.ok{color:var(--ok)}
+    .status-dot.warn{color:var(--wn)}
+    .status-dot.bad{color:var(--bd)}
+
+    /* ── Main ── */
+    .main{display:flex;flex-direction:column;overflow:hidden}
+
+    /* ── Topbar inside main ── */
+    .topbar{
+      background:var(--s1);border-bottom:1px solid var(--b1);
+      padding:12px 24px;
+      display:flex;align-items:center;justify-content:space-between;gap:16px;
+      flex-shrink:0;
+    }
+    .topbar-title{font-size:18px;font-weight:800;color:var(--tx)}
+    .topbar-sub{font-size:12px;color:var(--mu);margin-top:1px}
+    .topbar-actions{display:flex;gap:8px;align-items:center}
+
+    /* ── Content area ── */
+    .content{flex:1;overflow-y:auto;padding:20px 24px}
+
+    /* ── Sections ── */
+    .section{display:none}
+    .section.active{display:block}
+
+    /* ── Cards ── */
+    .card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:18px 20px}
+    .card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+    .card-title{font-size:15px;font-weight:700;color:var(--tx)}
+    .card-sub{font-size:12px;color:var(--mu);margin-top:2px}
+
+    /* ── Stats section ── */
+    .stats-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px}
+    .stat{
+      background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);
+      padding:18px 16px;cursor:default;transition:border-color .2s,transform .15s;
+    }
+    .stat:hover{border-color:var(--ac);transform:translateY(-2px)}
+    .stat .label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);margin-bottom:8px}
+    .stat .value{font-size:28px;font-weight:800;color:var(--tx);line-height:1}
+    .stat .trend{font-size:11px;color:var(--mu);margin-top:6px}
+
+    /* ── Dashboard map ── */
+    #map-dash{height:460px;border-radius:var(--rs);overflow:hidden;border:1px solid var(--b1)}
+
+    /* ── Orders section ── */
+    .orders-layout{display:grid;grid-template-columns:300px 1fr 320px;gap:14px;height:calc(100vh - 130px)}
+    .orders-col{display:flex;flex-direction:column;gap:0;overflow:hidden;background:var(--s1);border:1px solid var(--b1);border-radius:var(--r)}
+    .col-head{padding:14px 16px;border-bottom:1px solid var(--b1);flex-shrink:0}
+    .col-head h3{font-size:14px;font-weight:700;color:var(--tx)}
+    .col-head p{font-size:11px;color:var(--mu)}
+    .col-body{flex:1;overflow-y:auto;padding:10px}
+    #map-orders{height:100%;border-radius:0;border:none}
+    .orders-map-col{overflow:hidden;border-radius:var(--r);border:1px solid var(--b1)}
+
+    /* ── Drivers section ── */
+    .drivers-layout{display:grid;grid-template-columns:1fr 380px;gap:14px}
+    .drivers-list-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);overflow:hidden;max-height:calc(100vh - 140px)}
+    .drivers-list-inner{overflow-y:auto;max-height:calc(100vh - 200px);padding:10px}
+
+    /* ── Forms ── */
+    .form{display:grid;gap:9px}
+    .row{display:flex;gap:8px}
+    .row>*{min-width:0;flex:1}
+    input,textarea,select{
+      width:100%;background:var(--s2);border:1px solid var(--b1);color:var(--tx);
+      padding:10px 13px;border-radius:var(--rs);font:inherit;font-size:13px;outline:none;
+      transition:border-color .18s,box-shadow .18s;appearance:none;
+    }
+    input::placeholder,textarea::placeholder{color:var(--di)}
+    input:focus,textarea:focus,select:focus{border-color:var(--ac);box-shadow:0 0 0 3px rgba(245,207,49,.1)}
+    select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236B7A99' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:30px;cursor:pointer}
+    textarea{min-height:70px;resize:vertical}
+    label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);display:block;margin-bottom:4px}
+    .field{display:grid;gap:4px}
+
+    /* ── Buttons ── */
+    .btn{border:none;border-radius:var(--rs);padding:10px 16px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:opacity .15s,transform .12s;white-space:nowrap}
+    .btn:hover{opacity:.88;transform:translateY(-1px)}
+    .btn:active{transform:translateY(0)}
+    .btn-main{background:var(--ac);color:#0F121C}
+    .btn-soft{background:var(--s2);color:var(--tx);border:1px solid var(--b1)}
+    .btn-bad{background:rgba(255,90,77,.15);color:var(--bd);border:1px solid rgba(255,90,77,.2)}
+    .btn-warn{background:rgba(245,166,35,.15);color:var(--wn);border:1px solid rgba(245,166,35,.2)}
+    .btn-sm{padding:6px 12px;font-size:12px}
+    .btn-full{width:100%}
+
+    /* ── Result box ── */
+    .result{background:var(--s2);border:1px solid var(--b1);border-radius:var(--rs);padding:12px 14px;color:var(--mu);font-size:13px;line-height:1.55}
+    .result strong{color:var(--tx)}
+    .result .code{font-family:"Cascadia Mono","Consolas",monospace;font-size:13px;color:var(--ac);font-weight:700}
+
+    /* ── List items ── */
+    .list{display:grid;gap:8px}
+    .item{
+      background:var(--s2);border:1px solid var(--b1);border-radius:var(--rs);
+      padding:12px 14px;display:grid;gap:7px;cursor:pointer;
+      transition:border-color .15s,transform .12s;
+    }
+    .item:hover{border-color:var(--b2);transform:translateY(-1px)}
+    .item.active{border-color:var(--ac);box-shadow:0 0 0 2px rgba(245,207,49,.12)}
+    .ir{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .item strong{font-size:13px;font-weight:700;color:var(--tx)}
+    .item .sub{color:var(--mu);font-size:12px}
+    .item .mono{font-family:"Cascadia Mono","Consolas",monospace;font-size:11px;color:var(--di)}
+    .empty{color:var(--mu);font-size:13px;text-align:center;padding:24px 0}
+
+    /* ── Pills ── */
+    .pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;white-space:nowrap}
+    .pill::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
+    .pill.ok{background:rgba(63,207,142,.12);color:var(--ok)}
+    .pill.soft{background:rgba(91,138,245,.12);color:var(--inf)}
+    .pill.warn{background:rgba(245,166,35,.12);color:var(--wn)}
+    .pill.bad{background:rgba(255,90,77,.12);color:var(--bd)}
+
+    /* ── Detail boxes ── */
+    .detail-grid{display:grid;gap:8px}
+    .dbox{background:var(--s2);border:1px solid var(--b1);border-radius:var(--rs);padding:11px 14px;font-size:13px;line-height:1.55}
+    .dbox .dlabel{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--mu);margin-bottom:3px}
+
+    /* ── Chat section ── */
+    .chat-layout{display:grid;grid-template-columns:240px 1fr;gap:14px;height:calc(100vh - 140px)}
+    .chat-sidebar{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column}
+    .chat-main{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);display:flex;flex-direction:column;overflow:hidden}
+    .chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;background:var(--bg)}
+    .bubble{max-width:80%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.45}
+    .bubble.operator{align-self:flex-end;background:var(--ac);color:#0F121C;border-bottom-right-radius:4px}
+    .bubble.driver{align-self:flex-start;background:var(--s2);border:1px solid var(--b1);color:var(--tx);border-bottom-left-radius:4px}
+    .bubble small{display:block;opacity:.55;font-size:10px;margin-top:4px}
+    .chat-compose{padding:12px 16px;border-top:1px solid var(--b1);display:flex;gap:8px}
+    .chat-compose input{flex:1}
+    .driver-chat-item{padding:12px 14px;cursor:pointer;border-bottom:1px solid var(--b1);transition:background .15s}
+    .driver-chat-item:hover{background:var(--s2)}
+    .driver-chat-item.active{background:rgba(245,207,49,.08)}
+    .driver-chat-item strong{display:block;font-size:13px;color:var(--tx)}
+    .driver-chat-item span{font-size:11px;color:var(--mu)}
+
+    /* ── Create order section ── */
+    .create-layout{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+    /* ── Complaints section ── */
+    .complaints-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+
+    /* ── Divider ── */
+    .divider{height:1px;background:var(--b1);margin:12px 0}
   </style>
 </head>
 <body>
-  <div class="page">
-    <section class="card topbar">
-      <div class="brand-stack">
-        <div class="eyebrow">Диспетчерская панель</div>
-        <h1>Профсоюз<br>"Рассвет"</h1>
-        <p>Операторы, водители, карта, заказы, жалобы и чаты собраны в одном рабочем окне. Панель рассчитана на быстрые решения без лишних переходов.</p>
-        <div class="stripe"></div>
+<div class="app">
+
+  <!-- ═══════════ SIDEBAR ═══════════ -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-badge">Диспетчерская</div>
+      <h1>Профсоюз<br><span>«Рассвет»</span></h1>
+      <p>Панель оператора</p>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section">Обзор</div>
+      <button class="nav-item active" data-sec="dashboard">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Дашборд
+      </button>
+
+      <div class="nav-section">Работа</div>
+      <button class="nav-item" data-sec="orders">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+        Заказы
+        <span class="nav-badge" id="orders-badge" style="display:none">0</span>
+      </button>
+      <button class="nav-item" data-sec="drivers">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        Водители
+      </button>
+      <button class="nav-item" data-sec="new-order">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        Новый заказ
+      </button>
+
+      <div class="nav-section">Коммуникации</div>
+      <button class="nav-item" data-sec="chat">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Чат с водителями
+      </button>
+      <button class="nav-item" data-sec="complaints">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Жалобы
+      </button>
+    </nav>
+
+    <div class="sidebar-status">
+      <div class="status-row">
+        <strong>Backend</strong>
+        <span class="status-dot warn" id="backend-dot">подключение…</span>
       </div>
-      <div class="status-grid">
-        <div class="signal-list">
-          <div class="signal warn" id="backend-pill"><strong>Backend</strong><span id="backend">подключение...</span></div>
-          <div class="signal warn" id="ws-pill"><strong>WebSocket</strong><span id="ws">подключение...</span></div>
+      <div class="status-row">
+        <strong>WebSocket</strong>
+        <span class="status-dot warn" id="ws-dot">подключение…</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══════════ MAIN ═══════════ -->
+  <div class="main">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="topbar-title">Дашборд</div>
+        <div class="topbar-sub" id="topbar-sub">Общая сводка и карта линии</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-soft btn-sm" onclick="refreshAll()">↻ Обновить</button>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+
+      <!-- ══ DASHBOARD ══ -->
+      <div class="section active" id="sec-dashboard">
+        <div class="stats-grid" id="stats"></div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <div class="col-head" style="border-bottom:1px solid var(--b1)">
+            <h3 class="card-title">Карта линии</h3>
+            <p class="card-sub">Онлайн-водители и активные заказы</p>
+          </div>
+          <div id="map-dash" style="height:460px;border-radius:0;border:none"></div>
         </div>
-        <div class="quote-box"><strong>Рабочая зона оператора</strong><br>Здесь можно создать водителя, оформить заказ по звонку, назначить машину, просмотреть жалобы и вести чат с линией в реальном времени.</div>
-      </div>
-    </section>
-
-    <section class="stats" id="stats"></section>
-
-    <section class="workspace">
-      <div class="stack sticky">
-        <section class="card panel">
-          <div class="panel-head"><div><h2>Новый водитель</h2><p class="micro">Оператор создает профиль, система генерирует invite code для входа в приложение водителя.</p></div></div>
-          <form id="driver-form" class="form">
-            <input name="full_name" placeholder="ФИО" required />
-            <input name="phone" placeholder="Телефон" />
-            <textarea name="passport_data" placeholder="Паспортные данные"></textarea>
-            <div class="row"><input name="vehicle_make" placeholder="Марка" /><input name="vehicle_model" placeholder="Модель" /></div>
-            <div class="row"><input name="vehicle_plate" placeholder="Госномер" /><input name="vehicle_color" placeholder="Цвет" /></div>
-            <select name="service_class"><option value="econom">Эконом</option><option value="comfort">Комфорт</option><option value="business">Бизнес</option></select>
-            <button class="btn btn-main" type="submit">Создать водителя</button>
-          </form>
-          <div class="quote-box" id="driver-result">После создания здесь появятся public ID и пригласительный код водителя.</div>
-        </section>
-
-        <section class="card panel">
-          <div class="panel-head"><div><h2>Заказ по звонку</h2><p class="micro">Оформление заказа оператором вручную с мгновенным расчетом стоимости.</p></div></div>
-          <form id="order-form" class="form">
-            <input name="passenger_phone" placeholder="Телефон пассажира" required />
-            <input name="pickup_address" placeholder="Откуда" required />
-            <input name="dropoff_address" placeholder="Куда" required />
-            <textarea name="comment" placeholder="Комментарий для водителя"></textarea>
-            <div class="row"><input name="passengers_count" type="number" min="1" max="8" value="1" /><select name="car_class"><option value="econom">Эконом</option><option value="comfort">Комфорт</option><option value="business">Бизнес</option></select></div>
-            <div class="row"><select name="payment_method"><option value="cash">Наличные</option><option value="card">Карта</option><option value="sbp">СБП</option></select><input name="promo_code" placeholder="Промокод" /></div>
-            <div class="row"><button class="btn btn-soft" type="button" onclick="quoteOrder()">Рассчитать</button><button class="btn btn-main" type="submit">Создать заказ</button></div>
-          </form>
-          <div class="quote-box" id="quote">Цена появится после расчета маршрута.</div>
-          <div class="micro" id="order-result"></div>
-        </section>
       </div>
 
-      <div class="stack">
-        <section class="card panel">
-          <div class="panel-head"><div><h2>Карта линии</h2><p class="micro">Онлайн-водители, активные заказы и выбранный маршрут отображаются здесь.</p></div><button class="btn btn-soft" onclick="refreshAll()">Обновить</button></div>
-          <div id="map"></div>
-        </section>
-        <section class="card panel">
-          <div class="panel-head"><div><h2>Лента заказов</h2><p class="micro">Новые, активные и завершенные поездки с быстрым переходом в детали.</p></div></div>
-          <div class="list" id="orders"></div>
-        </section>
+      <!-- ══ ORDERS ══ -->
+      <div class="section" id="sec-orders">
+        <div class="orders-layout">
+          <!-- Order list -->
+          <div class="orders-col">
+            <div class="col-head">
+              <h3>Лента заказов</h3>
+              <p>Все поездки в реальном времени</p>
+            </div>
+            <div class="col-body">
+              <div class="list" id="orders"></div>
+            </div>
+          </div>
+          <!-- Map -->
+          <div class="orders-map-col">
+            <div id="map-orders" style="height:100%"></div>
+          </div>
+          <!-- Details -->
+          <div class="orders-col">
+            <div class="col-head">
+              <h3>Детали заказа</h3>
+              <p>Управление выбранной поездкой</p>
+            </div>
+            <div class="col-body">
+              <div id="details" class="detail-grid" style="color:var(--mu);font-size:13px">
+                Выберите заказ в ленте или на карте.
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div class="stack sticky">
-        <section class="card panel"><div class="panel-head"><div><h2>Водители</h2><p class="micro">Парк, статусы, invite code и быстрый переход в чат с оператором.</p></div></div><div class="list" id="drivers"></div></section>
-        <section class="card panel"><div class="panel-head"><div><h2>Детали заказа</h2><p class="micro">Назначение, завершение, отмена и ручное управление заказом.</p></div></div><div id="details" class="details-grid micro">Выберите заказ в ленте или на карте.</div></section>
-        <section class="card panel"><div class="panel-head"><div><h2>Чат с водителем</h2><p class="micro">Операторская переписка хранится и доступна при повторном подключении.</p></div></div><select id="chat-driver"></select><div class="chat" id="chat"></div><div class="compose"><input id="chat-input" placeholder="Сообщение водителю" /><button class="btn btn-main" onclick="sendChat()">Отправить</button></div><div class="micro" id="chat-status">Выберите водителя для переписки.</div></section>
-        <section class="card panel"><div class="panel-head"><div><h2>Жалобы и отзывы</h2><p class="micro">Негативные оценки и причины жалоб после завершения поездок.</p></div></div><div class="list" id="complaints"></div></section>
+      <!-- ══ DRIVERS ══ -->
+      <div class="section" id="sec-drivers">
+        <div class="drivers-layout">
+          <!-- Driver list -->
+          <div class="card" style="padding:0;overflow:hidden">
+            <div class="col-head" style="border-bottom:1px solid var(--b1);padding:14px 18px">
+              <h3 class="card-title">Парк водителей</h3>
+              <p class="card-sub">Профили, статусы и invite code</p>
+            </div>
+            <div style="overflow-y:auto;max-height:calc(100vh - 200px);padding:12px">
+              <div class="list" id="drivers"></div>
+            </div>
+          </div>
+          <!-- Create driver -->
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">Новый водитель</div>
+                <div class="card-sub">Создать профиль и сгенерировать invite code</div>
+              </div>
+            </div>
+            <form id="driver-form" class="form">
+              <div class="field"><label>ФИО</label><input name="full_name" placeholder="Иванов Иван Иванович" required/></div>
+              <div class="field"><label>Телефон</label><input name="phone" placeholder="+7 999 000-00-00"/></div>
+              <div class="field"><label>Паспортные данные</label><textarea name="passport_data" placeholder="Серия, номер, кем выдан…"></textarea></div>
+              <div class="row">
+                <div class="field"><label>Марка</label><input name="vehicle_make" placeholder="Toyota"/></div>
+                <div class="field"><label>Модель</label><input name="vehicle_model" placeholder="Camry"/></div>
+              </div>
+              <div class="row">
+                <div class="field"><label>Госномер</label><input name="vehicle_plate" placeholder="А000АА 77"/></div>
+                <div class="field"><label>Цвет</label><input name="vehicle_color" placeholder="Белый"/></div>
+              </div>
+              <div class="field"><label>Класс</label>
+                <select name="service_class">
+                  <option value="econom">Эконом</option>
+                  <option value="comfort">Комфорт</option>
+                  <option value="business">Бизнес</option>
+                </select>
+              </div>
+              <button class="btn btn-main btn-full" type="submit">Создать водителя</button>
+            </form>
+            <div class="divider"></div>
+            <div class="result" id="driver-result">После создания здесь появятся public ID и пригласительный код.</div>
+          </div>
+        </div>
       </div>
-    </section>
-  </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script>
-    const S={stats:null,orders:[],drivers:[],complaints:[],selected:null,chatDriver:"",chat:[],ws:null};
-    const map=L.map("map").setView([55.7558,37.6176],11);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"&copy; OpenStreetMap contributors"}).addTo(map);
-    const layers={drivers:L.layerGroup().addTo(map),orders:L.layerGroup().addTo(map),route:L.layerGroup().addTo(map)};
-    const esc=(v)=>String(v||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
-    const money=(v)=>`${Number(v||0).toLocaleString("ru-RU",{maximumFractionDigits:0})} ₽`;
-    const at=(v)=>v?new Date(v).toLocaleString("ru-RU",{hour:"2-digit",minute:"2-digit",day:"2-digit",month:"2-digit"}):"—";
-    const statusName=(s)=>({created:"Новый",searching_driver:"Ищет водителя",accepted:"Принят",driver_on_the_way:"В пути",driver_nearby_leave_now:"Подъезжает",arrived:"На месте",ride_in_progress:"Поездка",completed:"Завершен",cancelled:"Отменен"}[s]||s);
-    const statusCls=(s)=>s==="completed"?"ok":s==="cancelled"?"bad":(s==="searching_driver"||s==="driver_nearby_leave_now")?"warn":"soft";
-    const humanPayment=(p)=>({cash:"Наличные",card:"Карта",sbp:"СБП"}[p]||p||"Оплата");
-    const setSignal=(id,state,text)=>{const n=document.getElementById(id);n.className=`signal ${state}`;n.querySelector("span:last-child").textContent=text;};
-    async function api(url,opt={}){const r=await fetch(url,{headers:{"Content-Type":"application/json"},...opt});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.detail||d.message||`HTTP ${r.status}`);return d;}
-    function renderStats(){const x=S.stats||{};const items=[["Заказов за день",x.orders_today||0],["Отмен за день",x.cancelled_today||0],["Активных заказов",x.active_orders||0],["Онлайн-водителей",x.online_drivers||0],["Средний чек",money(x.avg_check)],["Выручка за день",money(x.revenue_today)]];document.getElementById("stats").innerHTML=items.map(([l,v])=>`<div class="card stat"><span>${l}</span><b>${v}</b></div>`).join("");}
-    function renderDrivers(){const box=document.getElementById("drivers"),sel=document.getElementById("chat-driver");sel.innerHTML='<option value="">Выберите водителя</option>'+S.drivers.map((d)=>`<option value="${d.public_id}">${d.public_id} — ${esc(d.full_name)}</option>`).join("");if(S.chatDriver)sel.value=S.chatDriver;box.innerHTML=S.drivers.map((d)=>`<div class="item ${S.chatDriver===d.public_id?"active":""}" onclick="pickDriver('${d.public_id}')"><div class="row" style="justify-content:space-between;"><strong>${esc(d.full_name)}</strong><span class="pill ${d.is_online?"ok":"soft"}">${d.is_online?"online":"offline"}</span></div><div class="micro mono">${esc(d.public_id)} • ${esc(d.invite_code)}</div><div>${esc([d.vehicle_make,d.vehicle_model,d.vehicle_plate].filter(Boolean).join(" • ")||"Машина пока не заполнена")}</div><div class="row" style="justify-content:space-between;"><span class="micro">Рейтинг: ${d.rating}</span><button class="btn btn-bad" onclick="event.stopPropagation();banDriver('${d.public_id}')">Бан</button></div></div>`).join("");}
-    function renderOrders(){document.getElementById("orders").innerHTML=S.orders.map((o)=>`<div class="item ${S.selected&&S.selected.public_id===o.public_id?"active":""}" onclick="pickOrder('${o.public_id}')"><div class="row" style="justify-content:space-between;"><strong>${o.public_id}</strong><span class="pill ${statusCls(o.status)}">${statusName(o.status)}</span></div><div>${esc(o.pickup_address)}</div><div>${esc(o.dropoff_address)}</div><div class="row" style="justify-content:space-between;"><span class="micro">${esc(o.passenger_phone||"пассажир")}</span><strong>${money(o.fare_total)}</strong></div><div class="micro">${o.driver_public_id?`Водитель: ${esc(o.driver_public_id)}`:"Водитель еще не назначен"}</div></div>`).join("");}
-    function renderComplaints(){const box=document.getElementById("complaints");if(!S.complaints.length){box.innerHTML='<div class="micro">Жалоб пока нет.</div>';return;}box.innerHTML=S.complaints.map((c)=>`<div class="item"><div class="row" style="justify-content:space-between;"><strong>${esc(c.order_public_id)}</strong><span class="pill ${Number(c.rating)<=2?"bad":"soft"}">${c.rating}/5</span></div><div>${esc(c.driver_full_name)} • ${esc(c.driver_public_id)}</div><div class="micro">${esc(c.passenger_phone)}</div><div>${esc((c.complaint_reason||"Без причины")+(c.complaint_text?`: ${c.complaint_text}`:""))}</div></div>`).join("");}
-    function renderDetails(){const o=S.selected,box=document.getElementById("details");if(!o){box.innerHTML='Выберите заказ в ленте или на карте.';return;}const opts='<option value="">Выберите водителя</option>'+S.drivers.map((d)=>`<option value="${d.id}" ${Number(o.driver_id)===Number(d.id)?"selected":""}>${d.public_id} — ${esc(d.full_name)}</option>`).join("");box.innerHTML=`<div class="detail-box"><strong>${o.public_id}</strong><br>${statusName(o.status)}</div><div class="detail-box"><strong>${money(o.fare_total)}</strong><br>${humanPayment(o.payment_method)} • ${esc(o.car_class||"econom")}</div><div class="detail-box"><strong>Маршрут</strong><br>${esc(o.pickup_address)}<br>↓<br>${esc(o.dropoff_address)}</div><div class="detail-box"><strong>Комментарий</strong><br>${esc(o.comment||"—")}</div><div class="detail-box"><strong>Время</strong><br>Создан: ${at(o.created_at)}<br>Принят: ${at(o.accepted_at)}</div><div class="row"><select id="assign-driver">${opts}</select><button class="btn btn-main" onclick="assignOrder()">Назначить</button></div><div class="row"><button class="btn btn-soft" onclick="unassignOrder()">Снять</button><button class="btn btn-warn" onclick="completeOrder()">Завершить</button><button class="btn btn-bad" onclick="cancelOrder()">Отменить</button></div>`;}
-    function renderChat(){const box=document.getElementById("chat");document.getElementById("chat-status").textContent=S.chatDriver?`Чат с ${S.chatDriver}`:"Выберите водителя для переписки.";if(!S.chatDriver){box.innerHTML='<div class="micro">Нет выбранного водителя.</div>';return;}if(!S.chat.length){box.innerHTML='<div class="micro">История пока пустая.</div>';return;}box.innerHTML=S.chat.map((m)=>`<div class="bubble ${m.sender_type==="driver"?"driver":"operator"}">${esc(m.text)}<br><small>${m.sender_type==="driver"?S.chatDriver:"оператор"} • ${at(m.created_at)}</small></div>`).join("");box.scrollTop=box.scrollHeight;}
-    function drawMap(){layers.drivers.clearLayers();layers.orders.clearLayers();layers.route.clearLayers();S.drivers.forEach((d)=>{if(d.current_lat==null||d.current_lon==null)return;const icon=L.divIcon({className:"",html:'<div style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:#f2c744;border:2px solid #091935;font-size:16px">🚕</div>',iconSize:[30,30],iconAnchor:[15,15]});L.marker([d.current_lat,d.current_lon],{icon}).bindPopup(`<strong>${esc(d.full_name)}</strong><br>${esc(d.public_id)}`).addTo(layers.drivers);});S.orders.forEach((o)=>{const color=o.status==="completed"?"#2f9b6d":o.status==="cancelled"?"#c74444":(o.status==="accepted"||o.status==="ride_in_progress")?"#0b5ed7":"#12315e";const marker=L.circleMarker([o.pickup_lat,o.pickup_lon],{radius:10,color,weight:2,fillColor:color,fillOpacity:.9}).bindPopup(`<strong>${esc(o.public_id)}</strong><br>${esc(o.pickup_address)}<br>→ ${esc(o.dropoff_address)}`);marker.on("click",()=>pickOrder(o.public_id));marker.addTo(layers.orders);});if(S.selected){const o=S.selected,c=o.route_geometry&&o.route_geometry.coordinates;if(Array.isArray(c)&&c.length>1){const pts=c.map((p)=>[p[1],p[0]]);L.polyline(pts,{color:"#0b5ed7",weight:4}).addTo(layers.route);map.fitBounds(L.latLngBounds(pts),{padding:[20,20]});}else{const pts=[[o.pickup_lat,o.pickup_lon],[o.dropoff_lat,o.dropoff_lon]];L.polyline(pts,{color:"#0b5ed7",weight:4}).addTo(layers.route);map.fitBounds(L.latLngBounds(pts),{padding:[20,20]});}}}
-    function pickOrder(id){S.selected=S.orders.find((o)=>o.public_id===id)||null;renderOrders();renderDetails();drawMap();}
-    async function pickDriver(id){S.chatDriver=id;renderDrivers();await loadChat();}
-    async function loadChat(){if(!S.chatDriver){S.chat=[];renderChat();return;}const d=await api(`/api/operator/chat/${encodeURIComponent(S.chatDriver)}?since=0`);S.chat=d.messages||[];renderChat();}
-    async function refreshAll(){try{const [dashboard,drivers,orders,complaints]=await Promise.all([api('/api/operator/dashboard'),api('/api/operator/drivers'),api('/api/operator/orders'),api('/api/operator/complaints')]);S.stats=dashboard;S.drivers=drivers.items||[];S.orders=orders.items||[];S.complaints=complaints.items||[];if(S.selected)S.selected=S.orders.find((o)=>o.public_id===S.selected.public_id)||null;renderStats();renderDrivers();renderOrders();renderComplaints();renderDetails();drawMap();setSignal("backend-pill","good","подключен");}catch(error){console.error(error);setSignal("backend-pill","bad",error.message);}}
-    async function banDriver(id){try{await api(`/api/operator/drivers/${encodeURIComponent(id)}/ban`,{method:'POST'});await refreshAll();}catch(error){alert(error.message);}}
-    async function assignOrder(){if(!S.selected)return;const driverId=Number(document.getElementById('assign-driver').value);if(!driverId){alert('Выберите водителя');return;}try{await api(`/api/operator/orders/${encodeURIComponent(S.selected.public_id)}/assign`,{method:'POST',body:JSON.stringify({driver_id:driverId})});await refreshAll();}catch(error){alert(error.message);}}
-    async function unassignOrder(){if(!S.selected)return;try{await api(`/api/operator/orders/${encodeURIComponent(S.selected.public_id)}/unassign`,{method:'POST'});await refreshAll();}catch(error){alert(error.message);}}
-    async function completeOrder(){if(!S.selected)return;try{await api(`/api/operator/orders/${encodeURIComponent(S.selected.public_id)}/complete`,{method:'POST'});await refreshAll();}catch(error){alert(error.message);}}
-    async function cancelOrder(){if(!S.selected)return;const reason=prompt('Причина отмены:','Отменено оператором')||'Отменено оператором';try{await api(`/api/operator/orders/${encodeURIComponent(S.selected.public_id)}/cancel`,{method:'POST',body:JSON.stringify({reason})});await refreshAll();}catch(error){alert(error.message);}}
-    async function quoteOrder(){const form=new FormData(document.getElementById('order-form'));const payload=Object.fromEntries(form.entries());payload.passengers_count=Number(payload.passengers_count||1);try{const quote=await api('/api/operator/orders/quote',{method:'POST',body:JSON.stringify(payload)});document.getElementById('quote').innerHTML=`<strong>${money(quote.fare_total)}</strong><br>Дистанция: ${Math.round((quote.route_distance_meters||0)/100)/10} км<br>Время: ${Math.round((quote.route_duration_seconds||0)/60)} мин<br>Комиссия: ${money(quote.service_commission_amount)}`;}catch(error){document.getElementById('quote').textContent=error.message;}}
-    async function sendChat(){const input=document.getElementById('chat-input');const text=input.value.trim();if(!S.chatDriver){alert('Выберите водителя');return;}if(!text)return;try{await api(`/api/operator/chat/${encodeURIComponent(S.chatDriver)}`,{method:'POST',body:JSON.stringify({driver_public_id:S.chatDriver,text})});input.value='';await loadChat();}catch(error){document.getElementById('chat-status').textContent=error.message;}}
-    document.getElementById('chat-driver').addEventListener('change',(event)=>pickDriver(event.target.value));
-    document.getElementById('driver-form').addEventListener('submit',async(event)=>{event.preventDefault();const payload=Object.fromEntries(new FormData(event.target).entries());try{const driver=await api('/api/operator/drivers',{method:'POST',body:JSON.stringify(payload)});document.getElementById('driver-result').innerHTML=`Создан водитель <strong>${esc(driver.full_name)}</strong><br>ID: <span class="mono">${esc(driver.public_id)}</span><br>Invite code: <span class="mono">${esc(driver.invite_code)}</span>`;event.target.reset();await refreshAll();}catch(error){document.getElementById('driver-result').textContent=error.message;}});
-    document.getElementById('order-form').addEventListener('submit',async(event)=>{event.preventDefault();const payload=Object.fromEntries(new FormData(event.target).entries());payload.passengers_count=Number(payload.passengers_count||1);try{const order=await api('/api/operator/orders',{method:'POST',body:JSON.stringify(payload)});document.getElementById('order-result').innerHTML=`Создан заказ <strong>${order.public_id}</strong>`;event.target.reset();await refreshAll();pickOrder(order.public_id);}catch(error){document.getElementById('order-result').textContent=error.message;}});
-    function connectWs(){const protocol=location.protocol==='https:'?'wss':'ws';S.ws=new WebSocket(`${protocol}://${location.host}/ws?role=operator`);S.ws.onopen=()=>setSignal('ws-pill','good','подключен');S.ws.onclose=()=>{setSignal('ws-pill','warn','переподключение...');setTimeout(connectWs,1500);};S.ws.onerror=()=>setSignal('ws-pill','bad','ошибка канала');S.ws.onmessage=async(event)=>{const message=JSON.parse(event.data);if(['order.created','order.accepted','order.updated','order.cancelled','order.completed','driver.presence','driver.location','dashboard.stats'].includes(message.type))refreshAll();if(message.type==='chat.message'&&S.chatDriver){const driverId=message.payload?.sender_id==='operator'?message.payload?.receiver_id:message.payload?.sender_id;if(driverId===S.chatDriver)loadChat();}};}
-    refreshAll();connectWs();setInterval(refreshAll,15000);
-  </script>
+      <!-- ══ NEW ORDER ══ -->
+      <div class="section" id="sec-new-order">
+        <div class="create-layout">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">Заказ по звонку</div>
+                <div class="card-sub">Оформление вручную оператором</div>
+              </div>
+            </div>
+            <form id="order-form" class="form">
+              <div class="field"><label>Телефон пассажира</label><input name="passenger_phone" placeholder="+7 999 000-00-00" required/></div>
+              <div class="field"><label>Откуда</label><input name="pickup_address" placeholder="Адрес подачи" required/></div>
+              <div class="field"><label>Куда</label><input name="dropoff_address" placeholder="Адрес назначения" required/></div>
+              <div class="field"><label>Комментарий водителю</label><textarea name="comment" placeholder="Подъезд, домофон, пожелания…"></textarea></div>
+              <div class="row">
+                <div class="field"><label>Пассажиров</label><input name="passengers_count" type="number" min="1" max="8" value="1"/></div>
+                <div class="field"><label>Класс</label>
+                  <select name="car_class">
+                    <option value="econom">Эконом</option>
+                    <option value="comfort">Комфорт</option>
+                    <option value="business">Бизнес</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row">
+                <div class="field"><label>Оплата</label>
+                  <select name="payment_method">
+                    <option value="cash">Наличные</option>
+                    <option value="card">Карта</option>
+                    <option value="sbp">СБП</option>
+                  </select>
+                </div>
+                <div class="field"><label>Промокод</label><input name="promo_code" placeholder="—"/></div>
+              </div>
+              <div class="row" style="margin-top:4px">
+                <button class="btn btn-soft" type="button" onclick="quoteOrder()">Рассчитать стоимость</button>
+                <button class="btn btn-main" type="submit">Создать заказ</button>
+              </div>
+            </form>
+            <div class="micro" id="order-result" style="margin-top:8px;color:var(--mu);font-size:12px"></div>
+          </div>
+
+          <div style="display:grid;gap:14px;align-content:start">
+            <div class="card">
+              <div class="card-head"><div class="card-title">Расчёт стоимости</div></div>
+              <div class="result" id="quote">Нажмите «Рассчитать стоимость» чтобы получить цену маршрута.</div>
+            </div>
+            <div class="card">
+              <div class="card-head"><div class="card-title">Как это работает</div></div>
+              <div style="display:grid;gap:10px">
+                <div class="result">1. Введите телефон пассажира, адреса откуда и куда</div>
+                <div class="result">2. Нажмите «Рассчитать» — система посчитает маршрут и стоимость</div>
+                <div class="result">3. Нажмите «Создать заказ» — он появится в ленте и уйдёт водителям</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ CHAT ══ -->
+      <div class="section" id="sec-chat">
+        <div class="chat-layout">
+          <div class="chat-sidebar">
+            <div class="col-head" style="border-bottom:1px solid var(--b1)">
+              <h3 style="font-size:14px;font-weight:700;color:var(--tx)">Водители</h3>
+              <p style="font-size:11px;color:var(--mu)">Выберите для переписки</p>
+            </div>
+            <div id="chat-driver-list" style="flex:1;overflow-y:auto"></div>
+          </div>
+          <div class="chat-main">
+            <div class="col-head" style="border-bottom:1px solid var(--b1);flex-shrink:0">
+              <h3 style="font-size:14px;font-weight:700;color:var(--tx)" id="chat-header">Выберите водителя</h3>
+              <p style="font-size:11px;color:var(--mu)" id="chat-status">Нет активного чата</p>
+            </div>
+            <div class="chat-messages" id="chat"></div>
+            <div class="chat-compose">
+              <input id="chat-input" placeholder="Сообщение водителю…"/>
+              <button class="btn btn-main" onclick="sendChat()">Отправить</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ COMPLAINTS ══ -->
+      <div class="section" id="sec-complaints">
+        <div class="complaints-grid" id="complaints"></div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+const S={stats:null,orders:[],drivers:[],complaints:[],selected:null,chatDriver:"",chat:[],ws:null};
+
+/* ── Maps ── */
+const DARK_TILES="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+const mapDash=L.map("map-dash",{zoomControl:true,attributionControl:false}).setView([55.7558,37.6176],11);
+L.tileLayer(DARK_TILES,{maxZoom:19}).addTo(mapDash);
+const layDash={drivers:L.layerGroup().addTo(mapDash),orders:L.layerGroup().addTo(mapDash),route:L.layerGroup().addTo(mapDash)};
+
+let mapOrders=null;
+function initMapOrders(){
+  if(mapOrders) return;
+  mapOrders=L.map("map-orders",{zoomControl:true,attributionControl:false}).setView([55.7558,37.6176],11);
+  L.tileLayer(DARK_TILES,{maxZoom:19}).addTo(mapOrders);
+  mapOrders._layers_={drivers:L.layerGroup().addTo(mapOrders),orders:L.layerGroup().addTo(mapOrders),route:L.layerGroup().addTo(mapOrders)};
+  setTimeout(()=>mapOrders.invalidateSize(),100);
+}
+
+/* ── Navigation ── */
+const SECTIONS={
+  dashboard:{title:"Дашборд",sub:"Общая сводка и карта линии"},
+  orders:{title:"Заказы",sub:"Лента и управление поездками"},
+  drivers:{title:"Водители",sub:"Парк и создание новых водителей"},
+  "new-order":{title:"Новый заказ",sub:"Оформление заказа по звонку"},
+  chat:{title:"Чат с водителями",sub:"Операторская переписка"},
+  complaints:{title:"Жалобы и отзывы",sub:"Негативные оценки пассажиров"}
+};
+function showSection(name){
+  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+  document.querySelectorAll(".nav-item").forEach(b=>b.classList.remove("active"));
+  document.getElementById(`sec-${name}`).classList.add("active");
+  document.querySelector(`[data-sec="${name}"]`).classList.add("active");
+  document.getElementById("topbar-title").textContent=SECTIONS[name].title;
+  document.getElementById("topbar-sub").textContent=SECTIONS[name].sub;
+  if(name==="orders") setTimeout(initMapOrders,50);
+  if(name==="dashboard") setTimeout(()=>mapDash.invalidateSize(),100);
+}
+document.querySelectorAll(".nav-item[data-sec]").forEach(btn=>{
+  btn.addEventListener("click",()=>showSection(btn.dataset.sec));
+});
+
+/* ── Helpers ── */
+const esc=v=>String(v||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+const money=v=>`${Number(v||0).toLocaleString("ru-RU",{maximumFractionDigits:0})} ₽`;
+const at=v=>v?new Date(v).toLocaleString("ru-RU",{hour:"2-digit",minute:"2-digit",day:"2-digit",month:"2-digit"}):"—";
+const STATUS={created:"Новый",searching_driver:"Поиск",accepted:"Принят",driver_on_the_way:"В пути",driver_nearby_leave_now:"Подъезжает",arrived:"На месте",ride_in_progress:"Поездка",completed:"Завершён",cancelled:"Отменён"};
+const statusName=s=>STATUS[s]||s;
+const statusCls=s=>s==="completed"?"ok":s==="cancelled"?"bad":(s==="searching_driver"||s==="driver_nearby_leave_now")?"warn":"soft";
+const humanPay=p=>({cash:"Наличные",card:"Карта",sbp:"СБП"}[p]||p||"Оплата");
+
+function setStatus(id,state,text){
+  const el=document.getElementById(id);
+  el.className=`status-dot ${state}`;
+  el.textContent=text;
+}
+
+async function api(url,opt={}){
+  const r=await fetch(url,{headers:{"Content-Type":"application/json"},...opt});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(d.detail||d.message||`HTTP ${r.status}`);
+  return d;
+}
+
+/* ── Render stats ── */
+function renderStats(){
+  const x=S.stats||{};
+  const items=[
+    ["Заказов сегодня",x.orders_today||0,"soft"],
+    ["Отменено сегодня",x.cancelled_today||0,"bad"],
+    ["Активных заказов",x.active_orders||0,"warn"],
+    ["Водителей онлайн",x.online_drivers||0,"ok"],
+    ["Средний чек",money(x.avg_check),"soft"],
+    ["Выручка сегодня",money(x.revenue_today),"ok"]
+  ];
+  document.getElementById("stats").innerHTML=items.map(([l,v,c])=>`
+    <div class="stat">
+      <div class="label">${l}</div>
+      <div class="value">${v}</div>
+      <div class="trend"><span class="pill ${c}">${l}</span></div>
+    </div>`).join("");
+}
+
+/* ── Render orders ── */
+function renderOrders(){
+  const box=document.getElementById("orders");
+  const active=S.orders.filter(o=>!["completed","cancelled"].includes(o.status));
+  const badge=active.length;
+  const el=document.getElementById("orders-badge");
+  el.style.display=badge>0?"flex":"none";
+  el.textContent=badge;
+  if(!S.orders.length){box.innerHTML='<div class="empty">Заказов пока нет</div>';return;}
+  box.innerHTML=S.orders.map(o=>`
+    <div class="item ${S.selected?.public_id===o.public_id?"active":""}" onclick="pickOrder('${o.public_id}')">
+      <div class="ir"><strong>${o.public_id}</strong><span class="pill ${statusCls(o.status)}">${statusName(o.status)}</span></div>
+      <div class="sub">📍 ${esc(o.pickup_address)}</div>
+      <div class="sub">🏁 ${esc(o.dropoff_address)}</div>
+      <div class="ir">
+        <span class="mono">${esc(o.passenger_phone||"—")}</span>
+        <strong style="color:var(--ac)">${money(o.fare_total)}</strong>
+      </div>
+      <div class="sub" style="font-size:11px">${o.driver_public_id?`🚖 ${esc(o.driver_public_id)}`:"Водитель не назначен"}</div>
+    </div>`).join("");
+}
+
+/* ── Render drivers ── */
+function renderDrivers(){
+  const box=document.getElementById("drivers");
+  const chatList=document.getElementById("chat-driver-list");
+  if(!S.drivers.length){
+    box.innerHTML='<div class="empty">Водителей нет</div>';
+    chatList.innerHTML='<div class="empty">Нет водителей</div>';
+    return;
+  }
+  box.innerHTML=S.drivers.map(d=>`
+    <div class="item ${S.chatDriver===d.public_id?"active":""}" onclick="pickDriver('${d.public_id}')">
+      <div class="ir">
+        <strong>${esc(d.full_name)}</strong>
+        <span class="pill ${d.is_online?"ok":"soft"}">${d.is_online?"онлайн":"офлайн"}</span>
+      </div>
+      <div class="mono">${esc(d.public_id)} · <span style="color:var(--ac)">${esc(d.invite_code)}</span></div>
+      <div class="sub">${esc([d.vehicle_make,d.vehicle_model,d.vehicle_plate].filter(Boolean).join(" · ")||"Машина не заполнена")}</div>
+      <div class="ir">
+        <span class="sub">★ ${d.rating??'—'}</span>
+        <button class="btn btn-bad btn-sm" onclick="event.stopPropagation();banDriver('${d.public_id}')">Заблокировать</button>
+      </div>
+    </div>`).join("");
+  chatList.innerHTML=S.drivers.map(d=>`
+    <div class="driver-chat-item ${S.chatDriver===d.public_id?"active":""}" onclick="pickDriver('${d.public_id}')">
+      <strong>${esc(d.full_name)}</strong>
+      <span><span class="pill ${d.is_online?"ok":"soft"}" style="font-size:9px">${d.is_online?"онлайн":"офлайн"}</span> ${esc(d.public_id)}</span>
+    </div>`).join("");
+}
+
+/* ── Render details ── */
+function renderDetails(){
+  const o=S.selected,box=document.getElementById("details");
+  if(!o){box.innerHTML='<div style="color:var(--mu);font-size:13px;padding:10px 0">Выберите заказ в ленте или на карте.</div>';return;}
+  const opts='<option value="">Выберите водителя…</option>'+S.drivers.map(d=>`<option value="${d.id}" ${Number(o.driver_id)===Number(d.id)?"selected":""}>${d.public_id} — ${esc(d.full_name)}</option>`).join("");
+  box.innerHTML=`
+    <div class="dbox"><div class="dlabel">Заказ</div>${o.public_id} <span class="pill ${statusCls(o.status)}">${statusName(o.status)}</span></div>
+    <div class="dbox"><div class="dlabel">Стоимость</div><span style="color:var(--ac);font-weight:800;font-size:18px">${money(o.fare_total)}</span> · ${humanPay(o.payment_method)}</div>
+    <div class="dbox"><div class="dlabel">Маршрут</div>📍 ${esc(o.pickup_address)}<br>🏁 ${esc(o.dropoff_address)}</div>
+    <div class="dbox"><div class="dlabel">Пассажир</div>${esc(o.passenger_phone||"—")}</div>
+    <div class="dbox"><div class="dlabel">Комментарий</div>${esc(o.comment||"Нет")}</div>
+    <div class="dbox"><div class="dlabel">Время</div>Создан: ${at(o.created_at)}<br>Принят: ${at(o.accepted_at)}</div>
+    <div class="divider"></div>
+    <div style="display:grid;gap:8px">
+      <div style="display:flex;gap:8px"><select id="assign-driver" style="flex:1">${opts}</select><button class="btn btn-main btn-sm" onclick="assignOrder()">Назначить</button></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button class="btn btn-soft btn-sm" onclick="unassignOrder()">Снять</button>
+        <button class="btn btn-warn btn-sm" onclick="completeOrder()">Завершить</button>
+      </div>
+      <button class="btn btn-bad btn-sm btn-full" onclick="cancelOrder()">Отменить заказ</button>
+    </div>`;
+}
+
+/* ── Render chat ── */
+function renderChat(){
+  const box=document.getElementById("chat");
+  const hdr=document.getElementById("chat-header");
+  const st=document.getElementById("chat-status");
+  if(!S.chatDriver){
+    hdr.textContent="Выберите водителя";st.textContent="Нет активного чата";
+    box.innerHTML='<div style="color:var(--mu);font-size:13px;margin:auto">Выберите водителя в списке слева</div>';return;
+  }
+  const d=S.drivers.find(x=>x.public_id===S.chatDriver);
+  hdr.textContent=d?d.full_name:S.chatDriver;
+  st.textContent=`${S.chatDriver} · ${S.chat.length} сообщений`;
+  if(!S.chat.length){box.innerHTML='<div style="color:var(--mu);font-size:13px;margin:auto">Сообщений пока нет</div>';return;}
+  box.innerHTML=S.chat.map(m=>`
+    <div class="bubble ${m.sender_type==="driver"?"driver":"operator"}">
+      ${esc(m.text)}
+      <small>${m.sender_type==="driver"?S.chatDriver:"оператор"} · ${at(m.created_at)}</small>
+    </div>`).join("");
+  box.scrollTop=box.scrollHeight;
+}
+
+/* ── Render complaints ── */
+function renderComplaints(){
+  const box=document.getElementById("complaints");
+  if(!S.complaints.length){box.innerHTML='<div class="card" style="grid-column:1/-1"><div class="empty">Жалоб пока нет 👍</div></div>';return;}
+  box.innerHTML=S.complaints.map(c=>`
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">${esc(c.order_public_id)}</div>
+          <div class="card-sub">${esc(c.passenger_phone)}</div>
+        </div>
+        <span class="pill ${Number(c.rating)<=2?"bad":"soft"}">${c.rating}/5</span>
+      </div>
+      <div class="result" style="margin-bottom:8px">
+        <strong>${esc(c.driver_full_name)}</strong> · ${esc(c.driver_public_id)}
+      </div>
+      <div class="result">${esc((c.complaint_reason||"Без причины")+(c.complaint_text?`: ${c.complaint_text}`:""))}</div>
+    </div>`).join("");
+}
+
+/* ── Draw map ── */
+function drawMap(mapInst,lays){
+  lays.drivers.clearLayers();lays.orders.clearLayers();lays.route.clearLayers();
+  S.drivers.forEach(d=>{
+    if(d.current_lat==null) return;
+    const icon=L.divIcon({className:"",html:`<div style="width:32px;height:32px;border-radius:50%;background:#F5CF31;border:2px solid #0F121C;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,.5)">🚖</div>`,iconSize:[32,32],iconAnchor:[16,16]});
+    L.marker([d.current_lat,d.current_lon],{icon}).bindPopup(`<strong>${esc(d.full_name)}</strong><br>${esc(d.public_id)}`).addTo(lays.drivers);
+  });
+  S.orders.forEach(o=>{
+    if(o.pickup_lat==null) return;
+    const colors={completed:"#3FCF8E",cancelled:"#FF5A4D",accepted:"#5B8AF5",ride_in_progress:"#5B8AF5"};
+    const color=colors[o.status]||"#F5CF31";
+    const m=L.circleMarker([o.pickup_lat,o.pickup_lon],{radius:9,color,weight:2,fillColor:color,fillOpacity:.85}).bindPopup(`<strong>${esc(o.public_id)}</strong><br>${esc(o.pickup_address)}`);
+    m.on("click",()=>pickOrder(o.public_id));m.addTo(lays.orders);
+  });
+  if(S.selected){
+    const o=S.selected,c=o.route_geometry?.coordinates;
+    if(Array.isArray(c)&&c.length>1){
+      const pts=c.map(p=>[p[1],p[0]]);
+      L.polyline(pts,{color:"#F5CF31",weight:4,opacity:.85}).addTo(lays.route);
+      mapInst.fitBounds(L.latLngBounds(pts),{padding:[20,20]});
+    }else if(o.pickup_lat&&o.dropoff_lat){
+      const pts=[[o.pickup_lat,o.pickup_lon],[o.dropoff_lat,o.dropoff_lon]];
+      L.polyline(pts,{color:"#F5CF31",weight:4,opacity:.85}).addTo(lays.route);
+      mapInst.fitBounds(L.latLngBounds(pts),{padding:[30,30]});
+    }
+  }
+}
+
+/* ── Actions ── */
+function pickOrder(id){
+  S.selected=S.orders.find(o=>o.public_id===id)||null;
+  renderOrders();renderDetails();
+  drawMap(mapDash,layDash);
+  if(mapOrders) drawMap(mapOrders,mapOrders._layers_);
+}
+async function pickDriver(id){
+  S.chatDriver=id;renderDrivers();await loadChat();
+}
+async function loadChat(){
+  if(!S.chatDriver){S.chat=[];renderChat();return;}
+  const d=await api(`/api/operator/chat/${encodeURIComponent(S.chatDriver)}?since=0`);
+  S.chat=d.messages||[];renderChat();
+}
+async function refreshAll(){
+  try{
+    const [dashboard,drivers,orders,complaints]=await Promise.all([
+      api('/api/operator/dashboard'),api('/api/operator/drivers'),
+      api('/api/operator/orders'),api('/api/operator/complaints')
+    ]);
+    S.stats=dashboard;S.drivers=drivers.items||[];S.orders=orders.items||[];S.complaints=complaints.items||[];
+    if(S.selected) S.selected=S.orders.find(o=>o.public_id===S.selected.public_id)||null;
+    renderStats();renderDrivers();renderOrders();renderComplaints();renderDetails();
+    drawMap(mapDash,layDash);
+    if(mapOrders) drawMap(mapOrders,mapOrders._layers_);
+    setStatus("backend-dot","ok","подключён");
+  }catch(err){
+    console.error(err);setStatus("backend-dot","bad",err.message);
+  }
+}
+async function banDriver(id){try{await api(`/api/operator/drivers/${encodeURIComponent(id)}/ban`,{method:'POST'});await refreshAll();}catch(err){alert(err.message);}}
+async function assignOrder(){if(!S.selected)return;const dId=Number(document.getElementById('assign-driver').value);if(!dId){alert('Выберите водителя');return;}try{await api(`/api/operator/orders/${encodeURIComponent(S.selected.public_id)}/assign`,{method:'POST',body:JSON.stringify({driver_id:dId})});await refreshAll();}catch(err){alert(err.message);}}
+async function unassignOrder(){if(!S.selected)return;try{await api(`/api/operator/orders/${encodeURIComponent(S.selected.public_id)}/unassign`,{method:'POST'});await refreshAll();}catch(err){alert(err.message);}}
+async function completeOrder(){if(!S.selected)return;try{await api(`/api/operator/orders/${encodeURIComponent(S.selected.public_id)}/complete`,{method:'POST'});await refreshAll();}catch(err){alert(err.message);}}
+async function cancelOrder(){if(!S.selected)return;const reason=prompt('Причина отмены:','Отменено оператором')||'Отменено оператором';try{await api(`/api/operator/orders/${encodeURIComponent(S.selected.public_id)}/cancel`,{method:'POST',body:JSON.stringify({reason})});await refreshAll();}catch(err){alert(err.message);}}
+async function quoteOrder(){
+  const form=new FormData(document.getElementById('order-form'));
+  const payload=Object.fromEntries(form.entries());payload.passengers_count=Number(payload.passengers_count||1);
+  try{
+    const q=await api('/api/operator/orders/quote',{method:'POST',body:JSON.stringify(payload)});
+    document.getElementById('quote').innerHTML=`<strong style="font-size:22px;color:var(--ac)">${money(q.fare_total)}</strong><br><br>Расстояние: ${Math.round((q.route_distance_meters||0)/100)/10} км<br>Время в пути: ~${Math.round((q.route_duration_seconds||0)/60)} мин<br>Комиссия сервиса: ${money(q.service_commission_amount)}`;
+  }catch(err){document.getElementById('quote').textContent=err.message;}
+}
+async function sendChat(){
+  const input=document.getElementById('chat-input');const text=input.value.trim();
+  if(!S.chatDriver){alert('Выберите водителя');return;}if(!text)return;
+  try{await api(`/api/operator/chat/${encodeURIComponent(S.chatDriver)}`,{method:'POST',body:JSON.stringify({driver_public_id:S.chatDriver,text})});input.value='';await loadChat();}
+  catch(err){document.getElementById('chat-status').textContent=err.message;}
+}
+document.getElementById('chat-input').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();}});
+
+document.getElementById('driver-form').addEventListener('submit',async e=>{
+  e.preventDefault();const payload=Object.fromEntries(new FormData(e.target).entries());
+  try{
+    const driver=await api('/api/operator/drivers',{method:'POST',body:JSON.stringify(payload)});
+    document.getElementById('driver-result').innerHTML=`✅ Создан: <strong>${esc(driver.full_name)}</strong><br>ID: ${esc(driver.public_id)}<br>Invite code: <span class="code">${esc(driver.invite_code)}</span>`;
+    e.target.reset();await refreshAll();
+  }catch(err){document.getElementById('driver-result').textContent=err.message;}
+});
+document.getElementById('order-form').addEventListener('submit',async e=>{
+  e.preventDefault();const payload=Object.fromEntries(new FormData(e.target).entries());payload.passengers_count=Number(payload.passengers_count||1);
+  try{
+    const order=await api('/api/operator/orders',{method:'POST',body:JSON.stringify(payload)});
+    document.getElementById('order-result').innerHTML=`✅ Создан заказ <strong>${order.public_id}</strong>`;
+    e.target.reset();await refreshAll();pickOrder(order.public_id);showSection('orders');
+  }catch(err){document.getElementById('order-result').textContent=err.message;}
+});
+
+/* ── WebSocket ── */
+function connectWs(){
+  const proto=location.protocol==='https:'?'wss':'ws';
+  S.ws=new WebSocket(`${proto}://${location.host}/ws?role=operator`);
+  S.ws.onopen=()=>setStatus('ws-dot','ok','подключён');
+  S.ws.onclose=()=>{setStatus('ws-dot','warn','переподключение…');setTimeout(connectWs,1500);};
+  S.ws.onerror=()=>setStatus('ws-dot','bad','ошибка');
+  S.ws.onmessage=async e=>{
+    const msg=JSON.parse(e.data);
+    if(['order.created','order.accepted','order.updated','order.cancelled','order.completed','driver.presence','driver.location','dashboard.stats'].includes(msg.type)) refreshAll();
+    if(msg.type==='chat.message'&&S.chatDriver){const dId=msg.payload?.sender_id==='operator'?msg.payload?.receiver_id:msg.payload?.sender_id;if(dId===S.chatDriver)loadChat();}
+  };
+}
+
+refreshAll();connectWs();setInterval(refreshAll,15000);
+</script>
 </body>
 </html>

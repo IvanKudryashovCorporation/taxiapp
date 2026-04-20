@@ -5,21 +5,10 @@
       "name": "Backend (FastAPI)",
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "uvicorn", "backend.main:app", "--reload"],
-      "port": 8000
-    },
-    {
-      "name": "Driver App (Kivy)",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["driver_app/app.py"],
-      "port": null,
-      "autoPort": true
-    },
-    {
-      "name": "Passenger App (Kivy)",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["passenger_app/app.py"],
-      "port": null,
-      "autoPort": true
+      "port": 8000,
+      "env": {
+        "DATABASE_URL": "postgresql://taxiapp:taxiapp@127.0.0.1:5432/taxiapp"
+      }
     }
   ]
 }
