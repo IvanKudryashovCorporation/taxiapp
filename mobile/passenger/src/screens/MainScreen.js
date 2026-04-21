@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import {
+  Animated,
   View, Text, TextInput, Pressable, ScrollView, FlatList,
   StyleSheet, ActivityIndicator, Alert, Dimensions, Keyboard, Platform, PanResponder,
 } from "react-native";
@@ -18,6 +19,8 @@ import ChatBubble from "../components/ChatBubble";
 const DEFAULT_LAT = 55.7558;
 const DEFAULT_LON = 37.6173;
 const { height: SCREEN_H } = Dimensions.get("window");
+const SHEET_EXPANDED_H  = SCREEN_H * 0.62;
+const SHEET_COLLAPSED_H = 96; // ручка (~38px) + NavBar (~55px)
 
 /* ─── Pickup pin ─── */
 function PickupPin({ loading }) {
@@ -128,8 +131,16 @@ export default function MainScreen() {
   const [activeSug,        setActiveSug]        = useState([]);
   const [activeSugLoading, setActiveSugLoading] = useState(false);
 
-  // Шторка статична — поиск теперь отдельный оверлей поверх всего
-  const sheetStyle = useMemo(() => ({ bottom: 0, maxHeight: SCREEN_H * 0.62 }), []);
+  // Анимация высоты шторки (spring — плавный подъём/спуск)
+  const sheetH = useRef(new Animated.Value(SHEET_EXPANDED_H)).current;
+  useEffect(() => {
+    Animated.spring(sheetH, {
+      toValue: sheetExpanded ? SHEET_EXPANDED_H : SHEET_COLLAPSED_H,
+      useNativeDriver: false,
+      tension: 60,
+      friction: 11,
+    }).start();
+  }, [sheetExpanded]); // eslint-disable-line
 
   // Центр карты (для кнопки "С карты")
   const [centerLat,     setCenterLat]     = useState(initLat);
@@ -432,7 +443,7 @@ export default function MainScreen() {
       )}
 
       {/* ── Bottom sheet ── */}
-      <View style={[styles.sheet, sheetStyle]}>
+      <Animated.View style={[styles.sheet, { bottom: 0, height: sheetH }]}>
 
         {/* Ручка */}
         <View {...panResponder.panHandlers} style={styles.handleWrap}>
@@ -517,7 +528,7 @@ export default function MainScreen() {
         {!activeField && sheetExpanded && tab === "ride"    && <RideTab order={currentOrder} onRefresh={refreshState} />}
         {!activeField && sheetExpanded && tab === "history" && <HistoryTab items={history} />}
         {!activeField && <NavBar active={tab} onChange={setTab} />}
-      </View>
+      </Animated.View>
     </View>
   );
 }
@@ -639,6 +650,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.sheet,
     borderTopLeftRadius: 26, borderTopRightRadius: 26,
     zIndex: 20,
+    overflow: "hidden", // контент не вылезает при анимации высоты
   },
 
   handleWrap: { alignItems: "center", paddingVertical: 8 },
