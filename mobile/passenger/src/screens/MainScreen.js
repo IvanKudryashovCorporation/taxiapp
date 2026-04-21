@@ -116,23 +116,50 @@ export default function MainScreen() {
     return () => { show.remove(); hide.remove(); };
   }, []);
 
-  // Свайп по ручке
+  // Drag шторки пальцем — высота следует за пальцем в реальном времени
   const panResponder = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 8,
-    onPanResponderRelease: (_, g) => {
-      if (g.dy > 40)       setSheetExpanded(false);
-      else if (g.dy < -40) setSheetExpanded(true);
+    onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 5,
+
+    onPanResponderGrant: () => {
+      // Зафиксировать высоту в момент прикосновения
+      sheetH.stopAnimation((val) => { dragStartH.current = val; });
     },
-  }), []);
+
+    onPanResponderMove: (_, g) => {
+      // Шторка уменьшается при движении вниз (dy > 0)
+      const next = dragStartH.current - g.dy;
+      sheetH.setValue(
+        Math.max(SHEET_COLLAPSED_H, Math.min(SHEET_EXPANDED_H, next))
+      );
+    },
+
+    onPanResponderRelease: (_, g) => {
+      const currentH = dragStartH.current - g.dy;
+      const mid = (SHEET_EXPANDED_H + SHEET_COLLAPSED_H) / 2;
+      // Коллапс: быстрый свайп вниз ИЛИ прошли за середину
+      const collapse = g.vy > 0.3 || (g.vy >= -0.3 && currentH < mid);
+
+      Animated.spring(sheetH, {
+        toValue: collapse ? SHEET_COLLAPSED_H : SHEET_EXPANDED_H,
+        useNativeDriver: false,
+        tension: 60,
+        friction: 11,
+      }).start();
+      setSheetExpanded(!collapse);
+    },
+  }), []); // eslint-disable-line
 
   // Поиск адреса
   const [activeField,      setActiveField]      = useState(null);
   const [activeSug,        setActiveSug]        = useState([]);
   const [activeSugLoading, setActiveSugLoading] = useState(false);
 
-  // Анимация высоты шторки (spring — плавный подъём/спуск)
-  const sheetH = useRef(new Animated.Value(SHEET_EXPANDED_H)).current;
+  // Анимированная высота шторки
+  const sheetH      = useRef(new Animated.Value(SHEET_EXPANDED_H)).current;
+  const dragStartH  = useRef(SHEET_EXPANDED_H); // высота в момент начала жеста
+
+  // Программный snap (при смене вкладки и т.п.)
   useEffect(() => {
     Animated.spring(sheetH, {
       toValue: sheetExpanded ? SHEET_EXPANDED_H : SHEET_COLLAPSED_H,
