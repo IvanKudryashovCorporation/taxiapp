@@ -128,20 +128,8 @@ export default function MainScreen() {
   const [activeSug,        setActiveSug]        = useState([]);
   const [activeSugLoading, setActiveSugLoading] = useState(false);
 
-  // Динамический стиль шторки
-  const sheetStyle = useMemo(() => {
-    if (activeField) {
-      if (keyboardH > 0) {
-        // Высота — не больше 55% экрана, чтобы инпут (внизу шторки) оказался
-        // примерно посередине видимой зоны, а не улетал к верху экрана
-        const availH = SCREEN_H - keyboardH;
-        const h = Math.min(availH, SCREEN_H * 0.55);
-        return { bottom: keyboardH, height: h, maxHeight: h };
-      }
-      return { bottom: 0, maxHeight: SCREEN_H * 0.65 };
-    }
-    return { bottom: 0, maxHeight: SCREEN_H * 0.62 };
-  }, [activeField, keyboardH]);
+  // Шторка статична — поиск теперь отдельный оверлей поверх всего
+  const sheetStyle = useMemo(() => ({ bottom: 0, maxHeight: SCREEN_H * 0.62 }), []);
 
   // Центр карты (для кнопки "С карты")
   const [centerLat,     setCenterLat]     = useState(initLat);
@@ -380,36 +368,27 @@ export default function MainScreen() {
         </Pressable>
       </SafeAreaView>
 
-      {/* ── Bottom sheet ── */}
-      <View style={[styles.sheet, sheetStyle]}>
-
-        {/* Ручка */}
-        {!activeField && (
-          <View {...panResponder.panHandlers} style={styles.handleWrap}>
-            <Pressable onPress={() => setSheetExpanded((v) => !v)} hitSlop={10}>
-              <View style={styles.handle} />
-              <Text style={styles.handleArrow}>{sheetExpanded ? "▼" : "▲  развернуть"}</Text>
-            </Pressable>
-          </View>
-        )}
-
-        {/* ══ РЕЖИМ ПОИСКА ══
-              Инпут — ВНИЗУ (прямо над клавиатурой), подсказки — ВЫШЕ      */}
-        {activeField && (
-          <View style={styles.searchContainer}>
-
-            {/* Подсказки заполняют верхнюю часть шторки */}
+      {/* ══ ПОИСК — абсолютный оверлей, НЕ внутри шторки ══
+           Инпут прибит к bottom: keyboardH и никогда не прыгает.
+           Подсказки заполняют пространство выше инпута.              */}
+      {activeField && (
+        <>
+          {/* Панель подсказок: от верха экрана до инпута */}
+          <SafeAreaView style={[styles.sugPanel, { bottom: keyboardH + 64 }]}>
             {activeSugLoading
-              ? <ActivityIndicator color={colors.textMuted} style={{ marginTop: 24 }} />
+              ? <ActivityIndicator color={colors.textMuted} style={{ marginTop: 32 }} />
               : (
                 <FlatList
                   data={activeSug}
                   keyExtractor={(_, i) => String(i)}
                   keyboardShouldPersistTaps="always"
-                  style={styles.sugScroll}
                   renderItem={({ item, index }) => (
                     <Pressable
-                      style={({ pressed }) => [styles.sugRow, index < activeSug.length - 1 && styles.sugRowSep, pressed && { backgroundColor: colors.cardAlt }]}
+                      style={({ pressed }) => [
+                        styles.sugRow,
+                        index < activeSug.length - 1 && styles.sugRowSep,
+                        pressed && { backgroundColor: colors.cardAlt },
+                      ]}
                       onPress={() => selectSug(item)}
                     >
                       <Text style={styles.sugIcon}>📍</Text>
@@ -427,32 +406,41 @@ export default function MainScreen() {
                   }
                 />
               )}
+          </SafeAreaView>
 
-            {/* Разделитель */}
-            <View style={styles.searchDivider} />
-
-            {/* Поле ввода — всегда внизу, прямо над клавиатурой */}
-            <View style={styles.searchHeader}>
-              <Pressable onPress={closeSearch} style={styles.searchBackBtn} hitSlop={12}>
-                <Text style={styles.searchBackText}>←</Text>
+          {/* Строка ввода — ВСЕГДА ровно над клавиатурой, не двигается */}
+          <View style={[styles.searchBarFixed, { bottom: keyboardH }]}>
+            <Pressable onPress={closeSearch} style={styles.searchBackBtn} hitSlop={12}>
+              <Text style={styles.searchBackText}>←</Text>
+            </Pressable>
+            <TextInput
+              style={styles.searchInput}
+              value={activeText}
+              onChangeText={onActiveSearch}
+              placeholder={activeField === "pickup" ? "Откуда поедете…" : "Куда поедете…"}
+              placeholderTextColor={colors.textMuted}
+              autoFocus
+              returnKeyType="search"
+            />
+            {activeText.length > 0 && (
+              <Pressable onPress={clearActive} style={styles.searchClearBtn} hitSlop={8}>
+                <Text style={styles.searchClearText}>✕</Text>
               </Pressable>
-              <TextInput
-                style={styles.searchInput}
-                value={activeText}
-                onChangeText={onActiveSearch}
-                placeholder={activeField === "pickup" ? "Откуда поедете…" : "Куда поедете…"}
-                placeholderTextColor={colors.textMuted}
-                autoFocus
-                returnKeyType="search"
-              />
-              {activeText.length > 0 && (
-                <Pressable onPress={clearActive} style={styles.searchClearBtn} hitSlop={8}>
-                  <Text style={styles.searchClearText}>✕</Text>
-                </Pressable>
-              )}
-            </View>
+            )}
           </View>
-        )}
+        </>
+      )}
+
+      {/* ── Bottom sheet ── */}
+      <View style={[styles.sheet, sheetStyle]}>
+
+        {/* Ручка */}
+        <View {...panResponder.panHandlers} style={styles.handleWrap}>
+          <Pressable onPress={() => setSheetExpanded((v) => !v)} hitSlop={10}>
+            <View style={styles.handle} />
+            <Text style={styles.handleArrow}>{sheetExpanded ? "▼" : "▲  развернуть"}</Text>
+          </Pressable>
+        </View>
 
         {/* ══ ОБЫЧНЫЙ КОНТЕНТ ══ */}
         {!activeField && sheetExpanded && tab === "create" && (
@@ -697,21 +685,33 @@ const styles = StyleSheet.create({
   },
   routeInfoText: { color: colors.text, fontSize: 13, fontWeight: "600" },
 
-  /* Поиск — инпут внизу, подсказки сверху */
-  searchContainer: { flex: 1, flexDirection: "column" },
-  searchHeader: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 10, paddingBottom: 14 },
+  /* ── Поиск: абсолютный оверлей ── */
+  // Панель подсказок: position absolute, top→bottom выше инпута
+  sugPanel: {
+    position: "absolute", top: 0, left: 0, right: 0,
+    backgroundColor: colors.sheet,
+    zIndex: 40,
+    // нижняя граница задаётся инлайн через { bottom: keyboardH + 64 }
+  },
+  // Строка ввода: прибита к клавиатуре
+  searchBarFixed: {
+    position: "absolute", left: 0, right: 0, height: 64,
+    backgroundColor: colors.sheet,
+    flexDirection: "row", alignItems: "center",
+    paddingHorizontal: 12,
+    borderTopWidth: 1, borderTopColor: colors.border,
+    zIndex: 41,
+  },
   searchBackBtn: { width: 40, height: 40, backgroundColor: colors.card, borderRadius: radius.md, alignItems: "center", justifyContent: "center", marginRight: 10 },
   searchBackText: { color: colors.text, fontSize: 20, lineHeight: 24 },
   searchInput: { flex: 1, backgroundColor: colors.card, color: colors.text, fontSize: 16, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 12 },
   searchClearBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center", marginLeft: 8 },
   searchClearText: { color: colors.textMuted, fontSize: 18 },
-  searchDivider: { height: 1, backgroundColor: colors.border, marginTop: 4 },
-  sugScroll: { flex: 1 },
   sugRow: { flexDirection: "row", alignItems: "flex-start", paddingHorizontal: 16, paddingVertical: 14 },
   sugRowSep: { borderBottomWidth: 1, borderBottomColor: colors.border },
   sugIcon: { fontSize: 16, marginRight: 10, marginTop: 1 },
   sugRowText: { flex: 1, color: colors.text, fontSize: 15, lineHeight: 20 },
-  sugHint: { color: colors.textMuted, fontSize: 14, textAlign: "center", marginTop: 30, paddingHorizontal: 24, lineHeight: 20 },
+  sugHint: { color: colors.textMuted, fontSize: 14, textAlign: "center", marginTop: 40, paddingHorizontal: 24, lineHeight: 20 },
 
   /* Форма */
   comment: { marginTop: 10, backgroundColor: colors.card, color: colors.text, borderRadius: radius.md, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14 },

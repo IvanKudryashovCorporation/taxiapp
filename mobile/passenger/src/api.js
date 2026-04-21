@@ -199,13 +199,14 @@ export async function geocodeSearch(query, nearLat, nearLon, cityName) {
       format: "json",
       "accept-language": "ru",
       limit: 8,
-      countrycodes: "ru",
+      // countrycodes намеренно убран: Nominatim считает Крым кодом "ua",
+      // из-за чего адреса Севастополя и других крымских городов не находились
       addressdetails: 1,
     };
     if (nearLat && nearLon) {
-      const d = 0.5; // ~55 км — достаточно для любого города
+      const d = 0.6; // ~65 км вокруг центра города
       params.viewbox = `${nearLon - d},${nearLat + d},${nearLon + d},${nearLat - d}`;
-      params.bounded = 1; // строго внутри viewbox
+      params.bounded = 0; // viewbox как приоритет (не жёсткое ограничение)
     }
     const r = await axios.get("https://nominatim.openstreetmap.org/search", {
       params,
