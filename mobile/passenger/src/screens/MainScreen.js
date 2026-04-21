@@ -80,7 +80,7 @@ function humanStatus(s) {
   return ({ created:"новый", searching_driver:"ищем водителя", accepted:"водитель назначен", driver_on_the_way:"водитель в пути", driver_nearby_leave_now:"водитель рядом", arrived:"водитель на месте", ride_in_progress:"поездка идёт", completed:"поездка завершена", cancelled:"отменён" }[s] || s || "—");
 }
 
-/* ─── Main Screen ─── */
+/* ─── Main Screen v2 ─── */
 export default function MainScreen() {
   const cityLat  = useStore((s) => s.cityLat);
   const cityLon  = useStore((s) => s.cityLon);
