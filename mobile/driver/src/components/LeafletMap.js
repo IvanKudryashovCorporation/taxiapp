@@ -13,6 +13,18 @@ function buildHTML(centerLat, centerLon) {
   html,body,#map{margin:0;padding:0;width:100%;height:100%;background:#0F121C;}
   .leaflet-container{background:#1a1e2e;}
   .car-wrap{filter:drop-shadow(0 4px 8px rgba(0,0,0,0.75));transform-origin:50% 50%;}
+  .price-tip {
+    background: rgba(245,207,49,0.95) !important;
+    border: none !important;
+    border-radius: 10px !important;
+    color: #1a1a1a !important;
+    font-weight: 800 !important;
+    font-size: 13px !important;
+    padding: 3px 8px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
+    white-space: nowrap !important;
+  }
+  .price-tip::before { display: none !important; }
 </style>
 </head>
 <body>
@@ -146,11 +158,26 @@ function buildHTML(centerLat, centerLon) {
     orderMarkers = [];
     list.forEach(function(m){
       var marker = L.circleMarker([m.lat, m.lon], {
-        radius: 10,
-        color: m.color || 'red',
-        fillColor: m.color || 'red',
-        fillOpacity: 0.9
-      }).addTo(map).bindPopup(m.label || '');
+        radius: 16,
+        color: m.color || 'yellow',
+        fillColor: m.color || 'yellow',
+        fillOpacity: 0.95,
+        weight: 3
+      }).addTo(map);
+
+      marker.bindTooltip(m.priceLabel || m.label || '', {
+        permanent: true,
+        direction: 'top',
+        offset: [0, -18],
+        className: 'price-tip'
+      });
+
+      (function(idx) {
+        marker.on('click', function() {
+          window.ReactNativeWebView.postMessage(JSON.stringify({type:'markerTap', index: idx}));
+        });
+      })(m.index != null ? m.index : 0);
+
       orderMarkers.push(marker);
     });
   }
@@ -176,7 +203,7 @@ function buildHTML(centerLat, centerLon) {
 }
 
 const LeafletMap = forwardRef(function LeafletMap(
-  { centerLat = 55.7558, centerLon = 37.6173, onCenterChange, onReady, style },
+  { centerLat = 55.7558, centerLon = 37.6173, onCenterChange, onReady, onMessage, style },
   ref
 ) {
   const webviewRef = useRef(null);
@@ -195,7 +222,7 @@ const LeafletMap = forwardRef(function LeafletMap(
       send({ cmd: "setCar", lat, lon });
     },
     setMarkers(markers) {
-      send({ cmd: "setMarkers", markers });
+      send({ cmd: "setMarkers", markers: markers.map((m, i) => ({ ...m, index: i })) });
     },
   }));
 
@@ -210,7 +237,11 @@ const LeafletMap = forwardRef(function LeafletMap(
         onMessage={(e) => {
           try {
             const data = JSON.parse(e.nativeEvent.data);
-            if (data.type === "center" && onCenterChange) onCenterChange(data.lat, data.lon);
+            if (data.type === "center" && onCenterChange) {
+              onCenterChange(data.lat, data.lon);
+            } else if (onMessage) {
+              onMessage(data);
+            }
           } catch {}
         }}
         originWhitelist={["*"]}

@@ -15,6 +15,7 @@ import LeafletMap from "../components/LeafletMap";
 import ServiceCard from "../components/ServiceCard";
 import NavBar from "../components/NavBar";
 import ChatBubble from "../components/ChatBubble";
+import OrderModal from "../components/OrderModal";
 
 const DEFAULT_LAT = 55.7558;
 const DEFAULT_LON = 37.6173;
@@ -355,7 +356,7 @@ export default function MainScreen() {
         payment_method: "cash", promo_code: null, waypoints: [],
       });
       await refreshState();
-      setStatus("Заказ создан. Ищем водителя…");
+      // OrderModal появится автоматически при появлении currentOrder
     } catch (e) { setStatus(e.message || "Не удалось создать"); }
     finally { setBusy(false); }
   };
@@ -552,10 +553,18 @@ export default function MainScreen() {
           </ScrollView>
         )}
 
-        {!activeField && sheetExpanded && tab === "ride"    && <RideTab order={currentOrder} onRefresh={refreshState} />}
         {!activeField && sheetExpanded && tab === "history" && <HistoryTab items={history} />}
         {!activeField && <NavBar active={tab} onChange={setTab} />}
       </Animated.View>
+
+      {/* ══ ORDER MODAL — slides up when order exists ══ */}
+      {currentOrder && (
+        <OrderModal
+          order={currentOrder}
+          onRefresh={refreshState}
+          onClose={() => refreshState()}
+        />
+      )}
     </View>
   );
 }
