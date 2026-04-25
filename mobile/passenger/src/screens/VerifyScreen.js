@@ -1,164 +1,177 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  StyleSheet,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
+  View, Text, TextInput, Pressable, StyleSheet,
+  KeyboardAvoidingView, Platform, StatusBar,
+  ActivityIndicator, Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../api";
 import { useStore } from "../state";
-import { colors, radius } from "../theme";
+
+const { width: W } = Dimensions.get("window");
+const ACCENT = "#F5CF31";
+const CODE_LEN = 4;
 
 export default function VerifyScreen({ route, navigation }) {
   const { phone, testCode } = route.params || {};
-  const [code, setCode] = useState(testCode ? String(testCode) : "");
-  const [status, setStatus] = useState("");
+  const [code,    setCode]    = useState(testCode ? String(testCode) : "");
   const [loading, setLoading] = useState(false);
-  const setAuth = useStore((s) => s.setAuth);
+  const [err,     setErr]     = useState("");
+  const setAuth   = useStore((s) => s.setAuth);
+  const inputRef  = useRef(null);
 
-  const submit = async () => {
-    setStatus("");
-    setLoading(true);
+  async function submit(overrideCode) {
+    const value = (overrideCode ?? code).trim();
+    if (value.length < CODE_LEN) { setErr("Введите 4-значный код"); return; }
+    setErr(""); setLoading(true);
     try {
-      const res = await api.verifyCode(phone, code.trim());
+      const res = await api.verifyCode(phone, value);
       if (!res?.token) throw new Error("Не получили токен от сервера");
       await setAuth({ token: res.token, profile: res.passenger });
     } catch (e) {
-      // ── ТЕСТОВЫЙ РЕЖИМ: если сервер недоступен — входим с фиктивными данными ──
-      const fakeToken = "test-token-passenger-" + phone;
+      // Тестовый режим: сервер недоступен — входим с фиктивными данными
+      const fakeToken  = "test-token-passenger-" + phone;
       const fakeProfile = { id: 1, phone, full_name: "Тест Пассажир" };
       await setAuth({ token: fakeToken, profile: fakeProfile });
     } finally {
       setLoading(false);
     }
-  };
+  }
+
+  function handleCodeChange(text) {
+    const digits = text.replace(/\D/g, "").slice(0, CODE_LEN);
+    setCode(digits);
+    setErr("");
+    if (digits.length === CODE_LEN) submit(digits);
+  }
 
   return (
-    <SafeAreaView style={styles.root}>
+    <View style={s.root}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
+      <SafeAreaView edges={["top"]}>
+        <Pressable onPress={() => navigation.goBack()} style={s.backBtn} hitSlop={12}>
+          <Text style={s.backArrow}>←</Text>
+          <Text style={s.backLabel}>Изменить номер</Text>
+        </Pressable>
+      </SafeAreaView>
+
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={s.body}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View style={styles.container}>
+        <View style={s.content}>
+          <Text style={s.title}>Введите код</Text>
+          <Text style={s.subtitle}>
+            {"Отправили SMS на\n"}
+            <Text style={s.phoneHighlight}>{phone}</Text>
+          </Text>
 
-          {/* ── Кнопка назад ── */}
-          <Pressable
-            style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
-            onPress={() => navigation.goBack()}
-            hitSlop={12}
-          >
-            <Text style={styles.backArrow}>←</Text>
-            <Text style={styles.backLabel}>Изменить номер</Text>
+          {testCode ? (
+            <View style={s.testHintBox}>
+              <Text style={s.testHintText}>Тестовый код: {testCode}</Text>
+            </View>
+          ) : null}
+
+          {/* Код: кнопочный ввод с цифровыми ячейками */}
+          <Pressable style={s.codeWrap} onPress={() => inputRef.current?.focus()}>
+            {/* Скрытый TextInput, который принимает ввод */}
+            <TextInput
+              ref={inputRef}
+              style={s.hiddenInput}
+              value={code}
+              onChangeText={handleCodeChange}
+              keyboardType="number-pad"
+              maxLength={CODE_LEN}
+              autoFocus
+              caretHidden
+              textContentType="oneTimeCode"
+            />
+            {/* Визуальные ячейки */}
+            <View style={s.digits}>
+              {Array.from({ length: CODE_LEN }, (_, i) => (
+                <View
+                  key={i}
+                  style={[
+                    s.digitBox,
+                    code.length === i && s.digitBoxActive,
+                    code[i] && s.digitBoxFilled,
+                  ]}
+                >
+                  <Text style={s.digitChar}>{code[i] || ""}</Text>
+                </View>
+              ))}
+            </View>
           </Pressable>
 
-          <View style={styles.hero}>
-            <Text style={styles.kicker}>ПОДТВЕРЖДЕНИЕ ВХОДА</Text>
-            <Text style={styles.phoneLabel}>Код отправлен на</Text>
-            <Text style={styles.phone}>{phone}</Text>
-            {testCode ? (
-              <Text style={styles.testHint}>Тестовый код: {testCode}</Text>
-            ) : null}
-          </View>
+          {!!err && <Text style={s.errText}>{err}</Text>}
 
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Введите SMS-код</Text>
-            <TextInput
-              style={styles.input}
-              value={code}
-              onChangeText={setCode}
-              placeholder="Например: 1111"
-              placeholderTextColor={colors.textDim}
-              keyboardType="number-pad"
-              autoFocus
-            />
-
-            <Pressable
-              style={({ pressed }) => [styles.primary, pressed && { opacity: 0.85 }]}
-              onPress={submit}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color={colors.accentText} />
-              ) : (
-                <Text style={styles.primaryText}>Войти</Text>
-              )}
-            </Pressable>
-
-            {!!status && <Text style={styles.err}>{status}</Text>}
-          </View>
-
+          <Pressable
+            style={[s.btn, (loading || code.length < CODE_LEN) && s.btnDisabled]}
+            onPress={() => submit()}
+            disabled={loading || code.length < CODE_LEN}
+          >
+            {loading
+              ? <ActivityIndicator color="#1A1A1A" />
+              : <Text style={s.btnText}>Войти</Text>
+            }
+          </Pressable>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
-  container: { flex: 1, padding: 22, justifyContent: "space-between" },
+const BOX = (W - 56 - 24) / CODE_LEN; // ячейка с отступами
 
-  /* Кнопка назад */
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: "#FFFFFF" },
+
   backBtn: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row", alignItems: "center",
+    paddingHorizontal: 20, paddingVertical: 14,
     alignSelf: "flex-start",
-    backgroundColor: colors.sheet,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginBottom: 8,
   },
-  backArrow: {
-    color: colors.text,
-    fontSize: 18,
-    marginRight: 8,
-    lineHeight: 22,
-  },
-  backLabel: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: "600",
-  },
+  backArrow: { fontSize: 20, color: "#1A1A1A", marginRight: 8, lineHeight: 24 },
+  backLabel: { fontSize: 15, fontWeight: "600", color: "#1A1A1A" },
 
-  hero: { paddingTop: 8 },
-  kicker: { color: colors.textMuted, fontSize: 12, fontWeight: "700", letterSpacing: 1 },
-  phoneLabel: { color: colors.textMuted, fontSize: 16, marginTop: 16 },
-  phone: { color: colors.text, fontSize: 32, fontWeight: "800", marginTop: 4 },
-  testHint: { color: colors.accent, marginTop: 16, fontSize: 13 },
+  body: { flex: 1 },
+  content: { flex: 1, paddingHorizontal: 28, paddingTop: 24 },
 
-  card: {
-    backgroundColor: colors.sheet,
-    borderRadius: radius.xl,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
+  title:    { fontSize: 34, fontWeight: "800", color: "#1A1A1A", marginBottom: 12 },
+  subtitle: { fontSize: 16, color: "#888888", lineHeight: 26, marginBottom: 32 },
+  phoneHighlight: { color: "#1A1A1A", fontWeight: "700" },
+
+  testHintBox: {
+    backgroundColor: "#FFFDE7", borderRadius: 12,
+    paddingHorizontal: 14, paddingVertical: 10,
+    marginBottom: 24, alignSelf: "flex-start",
   },
-  cardTitle: { color: colors.text, fontSize: 20, fontWeight: "700", marginBottom: 14 },
-  input: {
-    backgroundColor: colors.inputBg,
-    color: colors.text,
-    fontSize: 22,
-    letterSpacing: 4,
-    borderRadius: radius.md,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
+  testHintText: { color: "#B8860B", fontSize: 13, fontWeight: "600" },
+
+  /* Ячейки кода */
+  codeWrap: { marginBottom: 24 },
+  hiddenInput: {
+    position: "absolute", opacity: 0, width: "100%", height: 72,
   },
-  primary: {
-    marginTop: 14,
-    backgroundColor: colors.accent,
-    borderRadius: radius.md,
-    paddingVertical: 16,
-    alignItems: "center",
+  digits: { flexDirection: "row", gap: 10 },
+  digitBox: {
+    width: BOX, height: 72, borderRadius: 16,
+    backgroundColor: "#F5F5F5", borderWidth: 2, borderColor: "#EEEEEE",
+    alignItems: "center", justifyContent: "center",
   },
-  primaryText: { color: colors.accentText, fontWeight: "800", fontSize: 15 },
-  err: { color: colors.danger, marginTop: 12, fontSize: 13 },
+  digitBoxActive: { borderColor: ACCENT, backgroundColor: "#FFFDE7" },
+  digitBoxFilled: { borderColor: "#1A1A1A", backgroundColor: "#F9F9F9" },
+  digitChar: { fontSize: 30, fontWeight: "700", color: "#1A1A1A" },
+
+  errText: { color: "#FF4444", fontSize: 14, marginBottom: 14 },
+
+  btn: {
+    backgroundColor: ACCENT, borderRadius: 16,
+    paddingVertical: 18, alignItems: "center",
+    shadowColor: ACCENT, shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3, shadowRadius: 10, elevation: 6,
+  },
+  btnDisabled: { opacity: 0.45, shadowOpacity: 0 },
+  btnText: { color: "#1A1A1A", fontSize: 17, fontWeight: "800" },
 });

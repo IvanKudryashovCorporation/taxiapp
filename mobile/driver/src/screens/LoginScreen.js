@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   KeyboardAvoidingView,
+  ScrollView,
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -48,44 +49,51 @@ export default function LoginScreen() {
     <SafeAreaView style={styles.root}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "android" ? 24 : 0}
       >
-        <View style={styles.container}>
-          <View style={styles.hero}>
-            <Text style={styles.kicker}>ВОДИТЕЛЬСКОЕ ПРИЛОЖЕНИЕ</Text>
-            <Text style={styles.title}>Профсоюз{"\n"}«Рассвет»</Text>
-            <Text style={styles.subtitle}>
-              Войдите по коду приглашения, чтобы начать принимать заказы.
-            </Text>
-          </View>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.container}>
+            <View style={styles.hero}>
+              <Text style={styles.kicker}>ВОДИТЕЛЬСКОЕ ПРИЛОЖЕНИЕ</Text>
+              <Text style={styles.title}>Профсоюз{"\n"}«Рассвет»</Text>
+              <Text style={styles.subtitle}>
+                Войдите по коду приглашения, чтобы начать принимать заказы.
+              </Text>
+            </View>
 
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Код приглашения</Text>
-            <TextInput
-              style={styles.input}
-              value={code}
-              onChangeText={(v) => setCode(v.toUpperCase())}
-              placeholder="ABC123"
-              placeholderTextColor={colors.textDim}
-              keyboardType="default"
-              autoCapitalize="characters"
-              autoCorrect={false}
-              autoFocus
-            />
-            <Pressable
-              style={({ pressed }) => [styles.primary, pressed && { opacity: 0.85 }]}
-              onPress={submit}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color={colors.accentText} />
-              ) : (
-                <Text style={styles.primaryText}>Войти</Text>
-              )}
-            </Pressable>
-            {!!status && <Text style={styles.err}>{status}</Text>}
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Код приглашения</Text>
+              <TextInput
+                style={styles.input}
+                value={code}
+                onChangeText={(v) => setCode(v.toUpperCase())}
+                placeholder="ABC123"
+                placeholderTextColor={colors.textDim}
+                keyboardType="default"
+                autoCapitalize="characters"
+                autoCorrect={false}
+                autoFocus
+              />
+              <Pressable
+                style={({ pressed }) => [styles.primary, pressed && { opacity: 0.85 }]}
+                onPress={submit}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color={colors.accentText} />
+                ) : (
+                  <Text style={styles.primaryText}>Войти</Text>
+                )}
+              </Pressable>
+              {!!status && <Text style={styles.err}>{status}</Text>}
+            </View>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

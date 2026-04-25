@@ -18,12 +18,16 @@ import ChatBubble from "../components/ChatBubble";
 
 export default function ChatScreen() {
   const currentOrder = useStore((s) => s.currentOrder);
+  const token        = useStore((s) => s.token);
   const [mode, setMode] = useState(currentOrder ? "ride" : "operator");
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
 
+  const isTestToken = token && token.startsWith("test-token-");
+
   const load = useCallback(async () => {
+    if (isTestToken) return;   // не дёргаем API с тест-токеном
     try {
       if (mode === "operator") {
         const items = await api.operatorChatHistory(0);
@@ -51,7 +55,7 @@ export default function ChatScreen() {
 
   const send = async () => {
     const t = text.trim();
-    if (!t) return;
+    if (!t || isTestToken) return;
     setSending(true);
     try {
       if (mode === "operator") await api.operatorChatSend(t);

@@ -21,15 +21,12 @@ export const useStore = create((set, get) => ({
     const token = await getItem(STORAGE_KEYS.token);
     const profile = await getItem(STORAGE_KEYS.profile);
     setAuthToken(token);
-    set({
-      token,
-      profile,
-      bootstrapped: true,
-      isOnline: !!profile?.is_online,
-    });
+    set({ token, profile, bootstrapped: true, isOnline: true });
     if (token) {
       get()._initSocket();
-      get().refreshState();
+      await get().refreshState();
+      // Автоматически уходим онлайн
+      get()._goOnline();
     }
   },
 
@@ -37,9 +34,11 @@ export const useStore = create((set, get) => ({
     setAuthToken(token);
     await setItem(STORAGE_KEYS.token, token);
     await setItem(STORAGE_KEYS.profile, profile);
-    set({ token, profile, isOnline: !!profile?.is_online });
+    set({ token, profile, isOnline: true });
     get()._initSocket();
-    get().refreshState();
+    await get().refreshState();
+    // Автоматически уходим онлайн
+    get()._goOnline();
   },
 
   async logout() {
@@ -63,20 +62,16 @@ export const useStore = create((set, get) => ({
   async refreshState() {
     const token = get().token;
     if (!token) return;
-    // Тестовый режим — пропускаем запросы к серверу
     if (token.startsWith("test-token-")) return;
     try {
       const me = await api.me();
-      set({ profile: me, isOnline: !!me.is_online });
+      // isOnline всегда true — не читаем с сервера
+      set({ profile: me });
       const current = await api.current();
       set({ currentOrder: current });
       if (current?.public_id && socket) socket.subscribeOrder(current.public_id);
-      if (get().isOnline) {
-        const items = await api.available();
-        set({ available: items });
-      } else {
-        set({ available: [] });
-      }
+      const items = await api.available();
+      set({ available: items });
     } catch (e) {
       console.warn("refreshState", e.message);
     }
@@ -86,20 +81,24 @@ export const useStore = create((set, get) => ({
     set({ location: loc });
   },
 
-  async togglePresence(next) {
+  setHeading(heading) {
+    set((s) => ({
+      location: s.location
+        ? { ...s.location, heading }
+        : { heading },
+    }));
+  },
+
+  // Вызывается автоматически при входе — выставляет водителя онлайн
+  async _goOnline() {
     const token = get().token;
-    // Тестовый режим — переключаем локально без сервера
-    if (token?.startsWith("test-token-")) {
-      set((s) => ({ isOnline: next, profile: s.profile ? { ...s.profile, is_online: next } : s.profile }));
-      return;
-    }
+    if (!token || token.startsWith("test-token-")) return;
     const loc = get().location;
     try {
-      const p = await api.setPresence(next, loc?.lat ?? null, loc?.lon ?? null);
-      set({ profile: p, isOnline: !!p.is_online });
-      await get().refreshState();
+      await api.setPresence(true, loc?.lat ?? null, loc?.lon ?? null);
+      set({ isOnline: true });
     } catch (e) {
-      console.warn("togglePresence", e.message);
+      console.warn("_goOnline", e.message);
     }
   },
 

@@ -1,12 +1,16 @@
 import React from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
-import { colors } from "../theme";
+
+const ACCENT = "#F5CF31";
+const TEXT_MUTED = "#AAAAAA";
+const BG = "#FFFFFF";
+const BORDER = "#EEEEEE";
 
 const TABS = [
-  { id: "create", icon: "⌂", label: "Главная" },
-  { id: "ride", icon: "≡", label: "Заказы" },
-  { id: "fav", icon: "♥", label: "Избранное" },
-  { id: "history", icon: "☰", label: "Меню" },
+  { id: "create",  icon: "⌂",  label: "Главная"   },
+  { id: "ride",    icon: "≡",  label: "Заказы"    },
+  { id: "fav",     icon: "♥",  label: "Избранное" },
+  { id: "history", icon: "☰",  label: "Меню"      },
 ];
 
 export default function NavBar({ active, onChange }) {
@@ -18,10 +22,10 @@ export default function NavBar({ active, onChange }) {
           <Pressable
             key={t.id}
             style={styles.item}
-            onPress={() => onChange && onChange(t.id)}
+            onPress={() => onChange?.(t.id)}
           >
-            <Text style={[styles.icon, isActive && { color: colors.accent }]}>{t.icon}</Text>
-            <Text style={[styles.label, isActive && { color: colors.accent }]}>{t.label}</Text>
+            <Text style={[styles.icon, isActive && styles.iconActive]}>{t.icon}</Text>
+            <Text style={[styles.label, isActive && styles.labelActive]}>{t.label}</Text>
           </Pressable>
         );
       })}
@@ -33,11 +37,13 @@ const styles = StyleSheet.create({
   root: {
     flexDirection: "row",
     borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.bg,
+    borderTopColor: BORDER,
+    backgroundColor: BG,
     paddingVertical: 8,
   },
   item: { flex: 1, alignItems: "center", paddingVertical: 6 },
-  icon: { fontSize: 20, color: colors.textMuted },
-  label: { color: colors.textMuted, fontSize: 10, marginTop: 2 },
+  icon:        { fontSize: 20, color: TEXT_MUTED },
+  iconActive:  { color: ACCENT },
+  label:       { color: TEXT_MUTED, fontSize: 10, marginTop: 2, fontWeight: "500" },
+  labelActive: { color: ACCENT, fontWeight: "700" },
 });

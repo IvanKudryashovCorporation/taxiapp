@@ -18,8 +18,6 @@ import OrderCard from "../components/OrderCard";
 export default function OrdersScreen() {
   const available = useStore((s) => s.available);
   const currentOrder = useStore((s) => s.currentOrder);
-  const isOnline = useStore((s) => s.isOnline);
-  const togglePresence = useStore((s) => s.togglePresence);
   const refreshState = useStore((s) => s.refreshState);
   const profile = useStore((s) => s.profile);
   const wsStatus = useStore((s) => s.wsStatus);
@@ -68,25 +66,14 @@ export default function OrdersScreen() {
             <View
               style={[
                 styles.wsDot,
-                {
-                  backgroundColor:
-                    wsStatus === "online" ? colors.success : colors.textDim,
-                },
+                { backgroundColor: wsStatus === "online" ? colors.success : colors.textDim },
               ]}
             />
             <Text style={styles.status}>
-              {wsStatus === "online" ? "онлайн" : "офлайн"} · {isOnline ? "на смене" : "не на смене"}
+              {wsStatus === "online" ? "онлайн" : "офлайн"}
             </Text>
           </View>
         </View>
-        <Pressable
-          onPress={() => togglePresence(!isOnline)}
-          style={[styles.toggle, isOnline ? styles.toggleOn : styles.toggleOff]}
-        >
-          <Text style={styles.toggleText}>
-            {isOnline ? "Закончить смену" : "Начать смену"}
-          </Text>
-        </Pressable>
       </View>
 
       {currentOrder && (
@@ -108,9 +95,7 @@ export default function OrdersScreen() {
         }
       >
         <Text style={styles.sectionTitle}>Доступные заказы</Text>
-        {!isOnline ? (
-          <Text style={styles.muted}>Включите смену, чтобы получать заказы.</Text>
-        ) : available.length === 0 ? (
+        {available.length === 0 ? (
           <Text style={styles.muted}>Пока нет новых заказов.</Text>
         ) : (
           available.map((o) => (
@@ -194,10 +179,6 @@ const styles = StyleSheet.create({
   hello: { color: colors.text, fontWeight: "700", fontSize: 16 },
   wsDot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
   status: { color: colors.textMuted, fontSize: 12 },
-  toggle: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: radius.md },
-  toggleOn: { backgroundColor: colors.danger },
-  toggleOff: { backgroundColor: colors.accent },
-  toggleText: { color: colors.accentText, fontWeight: "800", fontSize: 13 },
   activeWrap: {
     paddingHorizontal: 14,
     paddingTop: 14,

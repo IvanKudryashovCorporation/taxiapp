@@ -1,15 +1,43 @@
 import React from "react";
-import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  StyleSheet,
+  Alert,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useStore } from "../state";
-import { colors, radius } from "../theme";
+
+const D = {
+  bg: "#0F121C",
+  card: "#1A1D2B",
+  cardAlt: "#22263A",
+  border: "#2E3347",
+  text: "#EFF2FA",
+  muted: "#8A92A8",
+  accent: "#F5CF31",
+  actText: "#11131B",
+  success: "#3CD48D",
+  danger: "#FF5A4D",
+};
+
+function MenuItem({ label, onPress }) {
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
+      onPress={onPress}
+    >
+      <Text style={styles.menuLabel}>{label}</Text>
+      <Text style={styles.menuChevron}>›</Text>
+    </Pressable>
+  );
+}
 
 export default function ProfileScreen() {
   const profile = useStore((s) => s.profile);
   const logout = useStore((s) => s.logout);
-  const isOnline = useStore((s) => s.isOnline);
-  const wsStatus = useStore((s) => s.wsStatus);
-  const location = useStore((s) => s.location);
 
   const confirmLogout = () => {
     Alert.alert("Выйти из аккаунта?", "", [
@@ -21,40 +49,86 @@ export default function ProfileScreen() {
   if (!profile) {
     return (
       <SafeAreaView style={styles.root}>
-        <Text style={styles.muted}>Загрузка профиля…</Text>
+        <View style={styles.loadingWrap}>
+          <Text style={styles.muted}>Загрузка профиля…</Text>
+        </View>
       </SafeAreaView>
     );
   }
 
+  const carLine = [
+    profile.vehicle_make,
+    profile.vehicle_model,
+    profile.vehicle_color,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
     <SafeAreaView style={styles.root} edges={["top"]}>
-      <ScrollView contentContainerStyle={{ padding: 14 }}>
-        <View style={styles.card}>
-          <Text style={styles.name}>{profile.full_name || "—"}</Text>
-          <Text style={styles.muted}>ID: {profile.public_id}</Text>
-          <Text style={styles.muted}>Рейтинг: ★ {profile.rating ?? "—"}</Text>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+
+        {/* Header card: rating + balance */}
+        <View style={styles.headerCard}>
+          <View style={styles.headerTop}>
+            <View style={styles.avatarCircle}>
+              <Text style={styles.avatarLetter}>
+                {(profile.full_name || "?")[0].toUpperCase()}
+              </Text>
+            </View>
+            <View style={styles.headerInfo}>
+              <Text style={styles.fullName}>{profile.full_name || "—"}</Text>
+              {carLine ? (
+                <Text style={styles.carLine}>{carLine}</Text>
+              ) : null}
+              {profile.vehicle_plate ? (
+                <View style={styles.plateBadge}>
+                  <Text style={styles.plateText}>{profile.vehicle_plate}</Text>
+                </View>
+              ) : null}
+            </View>
+          </View>
+
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>
+                ★ {profile.rating != null ? profile.rating : "—"}
+              </Text>
+              <Text style={styles.statLabel}>Рейтинг</Text>
+            </View>
+            <View style={styles.statSep} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>
+                {profile.balance != null ? `${profile.balance} ₽` : "—"}
+              </Text>
+              <Text style={styles.statLabel}>Баланс</Text>
+            </View>
+            <View style={styles.statSep} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>
+                {profile.level != null ? profile.level : "—"}
+              </Text>
+              <Text style={styles.statLabel}>Уровень</Text>
+            </View>
+          </View>
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Автомобиль</Text>
-          <Row label="Марка" value={profile.vehicle_make} />
-          <Row label="Модель" value={profile.vehicle_model} />
-          <Row label="Цвет" value={profile.vehicle_color} />
-          <Row label="Номер" value={profile.vehicle_plate} />
+        {/* Menu */}
+        <View style={styles.menuCard}>
+          <MenuItem label="Личные данные" onPress={() => {}} />
+          <View style={styles.menuDivider} />
+          <MenuItem label="Автомобиль" onPress={() => {}} />
+          <View style={styles.menuDivider} />
+          <MenuItem label="Документы" onPress={() => {}} />
+          <View style={styles.menuDivider} />
+          <MenuItem label="Настройки" onPress={() => {}} />
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Состояние</Text>
-          <Row label="Смена" value={isOnline ? "активна" : "не на смене"} />
-          <Row label="WebSocket" value={wsStatus} />
-          <Row
-            label="Координаты"
-            value={location ? `${location.lat.toFixed(5)}, ${location.lon.toFixed(5)}` : "—"}
-          />
-          <Row label="Баланс" value={profile.balance != null ? `${profile.balance} ₽` : "—"} />
-        </View>
-
-        <Pressable onPress={confirmLogout} style={styles.logout}>
+        {/* Logout */}
+        <Pressable
+          onPress={confirmLogout}
+          style={({ pressed }) => [styles.logoutBtn, pressed && { opacity: 0.7 }]}
+        >
           <Text style={styles.logoutText}>Выйти</Text>
         </Pressable>
       </ScrollView>
@@ -62,37 +136,102 @@ export default function ProfileScreen() {
   );
 }
 
-function Row({ label, value }) {
-  return (
-    <View style={styles.row}>
-      <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={styles.rowValue}>{value || "—"}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    padding: 16,
-    marginBottom: 10,
+  root: { flex: 1, backgroundColor: D.bg },
+  scroll: { padding: 16, paddingBottom: 32 },
+  loadingWrap: { flex: 1, alignItems: "center", justifyContent: "center" },
+  muted: { color: D.muted, fontSize: 14 },
+
+  // Header card
+  headerCard: {
+    backgroundColor: D.card,
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: D.border,
   },
-  name: { color: colors.text, fontSize: 20, fontWeight: "800" },
-  sectionTitle: { color: colors.textMuted, fontSize: 12, fontWeight: "700", letterSpacing: 1, marginBottom: 8 },
-  row: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 6 },
-  rowLabel: { color: colors.textMuted, fontSize: 13 },
-  rowValue: { color: colors.text, fontSize: 13, fontWeight: "600" },
-  muted: { color: colors.textMuted, fontSize: 13, marginTop: 4 },
-  logout: {
-    backgroundColor: colors.cardAlt,
-    borderRadius: radius.md,
-    paddingVertical: 14,
+  headerTop: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 16,
+  },
+  avatarCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: D.accent,
     alignItems: "center",
-    marginTop: 10,
+    justifyContent: "center",
+    marginRight: 14,
   },
-  logoutText: { color: colors.danger, fontWeight: "800", fontSize: 14 },
+  avatarLetter: {
+    color: D.actText,
+    fontSize: 26,
+    fontWeight: "800",
+  },
+  headerInfo: { flex: 1, justifyContent: "center" },
+  fullName: {
+    color: D.text,
+    fontSize: 20,
+    fontWeight: "800",
+    marginBottom: 4,
+  },
+  carLine: { color: D.muted, fontSize: 13, marginBottom: 6 },
+  plateBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: D.cardAlt,
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: D.border,
+  },
+  plateText: { color: D.text, fontSize: 13, fontWeight: "700", letterSpacing: 1 },
+
+  // Stats row inside header
+  statsRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderColor: D.border,
+  },
+  statItem: { alignItems: "center", flex: 1 },
+  statValue: { color: D.text, fontSize: 16, fontWeight: "800", marginBottom: 2 },
+  statLabel: { color: D.muted, fontSize: 11 },
+  statSep: { width: 1, height: 30, backgroundColor: D.border },
+
+  // Menu card
+  menuCard: {
+    backgroundColor: D.card,
+    borderRadius: 18,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: D.border,
+    overflow: "hidden",
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+  },
+  menuItemPressed: { backgroundColor: D.cardAlt },
+  menuLabel: { color: D.text, fontSize: 15, fontWeight: "500" },
+  menuChevron: { color: D.muted, fontSize: 22, fontWeight: "300", marginTop: -2 },
+  menuDivider: { height: 1, backgroundColor: D.border, marginHorizontal: 18 },
+
+  // Logout
+  logoutBtn: {
+    backgroundColor: D.card,
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: D.border,
+  },
+  logoutText: { color: D.danger, fontWeight: "700", fontSize: 15 },
 });

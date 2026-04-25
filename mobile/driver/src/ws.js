@@ -15,7 +15,8 @@ export class DriverSocket {
   setToken(token) {
     this.token = token;
     if (this.ws) this.disconnect();
-    if (token) this.connect();
+    // Не подключаемся с тест-токеном — бэкенд его отвергнет и будет loop
+    if (token && !token.startsWith("test-token-")) this.connect();
   }
 
   connect() {
@@ -93,6 +94,8 @@ export class DriverSocket {
 
   _scheduleReconnect() {
     if (this.reconnectTimer || !this.token) return;
+    // Не переподключаемся с тест-токеном
+    if (this.token.startsWith("test-token-")) return;
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
       this.connect();

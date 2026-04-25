@@ -11,8 +11,8 @@ import { useStore } from "./src/state";
 import { colors } from "./src/theme";
 
 import LoginScreen from "./src/screens/LoginScreen";
-import OrdersScreen from "./src/screens/OrdersScreen";
 import MapScreen from "./src/screens/MapScreen";
+import IncomeScreen from "./src/screens/IncomeScreen";
 import ChatScreen from "./src/screens/ChatScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import LocationTracker from "./src/components/LocationTracker";
@@ -54,26 +54,26 @@ function TabsNav() {
         }}
       >
         <Tabs.Screen
-          name="Orders"
-          component={OrdersScreen}
-          options={{
-            title: "Заказы",
-            tabBarIcon: ({ color }) => <TabIcon color={color} glyph="☰" />,
-          }}
-        />
-        <Tabs.Screen
           name="Map"
           component={MapScreen}
           options={{
-            title: "Карта",
-            tabBarIcon: ({ color }) => <TabIcon color={color} glyph="◎" />,
+            title: "Главная",
+            tabBarIcon: ({ color }) => <TabIcon color={color} glyph="⌂" />,
+          }}
+        />
+        <Tabs.Screen
+          name="Income"
+          component={IncomeScreen}
+          options={{
+            title: "Доходы",
+            tabBarIcon: ({ color }) => <TabIcon color={color} glyph="₽" />,
           }}
         />
         <Tabs.Screen
           name="Chat"
           component={ChatScreen}
           options={{
-            title: "Чат",
+            title: "Сообщения",
             tabBarIcon: ({ color }) => <TabIcon color={color} glyph="✉" />,
           }}
         />
@@ -82,7 +82,7 @@ function TabsNav() {
           component={ProfileScreen}
           options={{
             title: "Профиль",
-            tabBarIcon: ({ color }) => <TabIcon color={color} glyph="⚙" />,
+            tabBarIcon: ({ color }) => <TabIcon color={color} glyph="👤" />,
           }}
         />
       </Tabs.Navigator>
