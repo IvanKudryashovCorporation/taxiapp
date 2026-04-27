@@ -35,7 +35,15 @@ function buildHTML(centerLat, centerLon, carB64) {
     filter: drop-shadow(0 4px 10px rgba(0,0,0,0.7));
     display: block !important;
   }
-  .car-rotate img { display: block !important; }
+  /* Car image via CSS — more reliable than JS string concat in divIcon */
+  .car-img {
+    width: 52px; height: 90px;
+    background-image: url('data:image/png;base64,${carB64}');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    display: block;
+  }
 
   .price-tip {
     background: rgba(245,207,49,0.95) !important;
@@ -65,9 +73,9 @@ function buildHTML(centerLat, centerLon, carB64) {
     maxZoom: 19
   }).addTo(map);
 
-  /* ── PNG car (base64, photo of real car rotated ~40° from north) ── */
-  var CAR_B64 = '${carB64}';
-  var CAR_BASE_ANGLE = -40;   /* correct for the photo tilt */
+  /* Car photo is in CSS .car-img (background-image: url(...base64...))    */
+  /* Rotation correction: photo is ~40° clockwise from north              */
+  var CAR_BASE_ANGLE = -40;
 
   /* ── Bearing helpers ── */
   var prevCarLat = null, prevCarLon = null, carBearing = 0;
@@ -107,9 +115,7 @@ function buildHTML(centerLat, centerLon, carB64) {
     } else {
       var icon = L.divIcon({
         className: 'car-icon-outer',
-        html: '<div class="car-rotate" style="transform:rotate(' + deg + 'deg)">' +
-              '<img src="data:image/png;base64,' + CAR_B64 + '" width="52" height="90" style="display:block;"/>' +
-              '<\\/div>',
+        html: '<div class="car-rotate" style="transform:rotate(' + deg + 'deg)"><div class="car-img"><\\/div><\\/div>',
         iconSize:   [52, 90],
         iconAnchor: [26, 45]
       });
