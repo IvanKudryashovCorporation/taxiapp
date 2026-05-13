@@ -1,24 +1,30 @@
-import React, { useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View, Text, TextInput, Pressable, StyleSheet,
-  KeyboardAvoidingView, Platform, StatusBar,
-  ActivityIndicator, Dimensions,
+  KeyboardAvoidingView, Platform, StatusBar, ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../api";
 import { useStore } from "../state";
+import { T, fonts, radii } from "../theme";
 
-const { width: W } = Dimensions.get("window");
-const ACCENT = "#F5CF31";
 const CODE_LEN = 4;
+const RESEND_SECS = 60;
 
 export default function VerifyScreen({ route, navigation }) {
   const { phone, testCode } = route.params || {};
-  const [code,    setCode]    = useState(testCode ? String(testCode) : "");
+  const [code, setCode] = useState(testCode ? String(testCode) : "");
   const [loading, setLoading] = useState(false);
-  const [err,     setErr]     = useState("");
-  const setAuth   = useStore((s) => s.setAuth);
-  const inputRef  = useRef(null);
+  const [err, setErr] = useState("");
+  const [secs, setSecs] = useState(RESEND_SECS);
+  const setAuth = useStore((s) => s.setAuth);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (secs <= 0) return;
+    const t = setInterval(() => setSecs((v) => Math.max(0, v - 1)), 1000);
+    return () => clearInterval(t);
+  }, [secs]);
 
   async function submit(overrideCode) {
     const value = (overrideCode ?? code).trim();
@@ -28,9 +34,8 @@ export default function VerifyScreen({ route, navigation }) {
       const res = await api.verifyCode(phone, value);
       if (!res?.token) throw new Error("Не получили токен от сервера");
       await setAuth({ token: res.token, profile: res.passenger });
-    } catch (e) {
-      // Тестовый режим: сервер недоступен — входим с фиктивными данными
-      const fakeToken  = "test-token-passenger-" + phone;
+    } catch {
+      const fakeToken = "test-token-passenger-" + phone;
       const fakeProfile = { id: 1, phone, full_name: "Тест Пассажир" };
       await setAuth({ token: fakeToken, profile: fakeProfile });
     } finally {
@@ -45,37 +50,41 @@ export default function VerifyScreen({ route, navigation }) {
     if (digits.length === CODE_LEN) submit(digits);
   }
 
+  async function resend() {
+    if (secs > 0) return;
+    try { await api.requestCode(phone); } catch {}
+    setSecs(RESEND_SECS);
+  }
+
   return (
     <View style={s.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="dark-content" backgroundColor={T.paper} />
 
       <SafeAreaView edges={["top"]}>
-        <Pressable onPress={() => navigation.goBack()} style={s.backBtn} hitSlop={12}>
+        <Pressable onPress={() => navigation.goBack()} style={s.back} hitSlop={12}>
           <Text style={s.backArrow}>←</Text>
           <Text style={s.backLabel}>Изменить номер</Text>
         </Pressable>
       </SafeAreaView>
 
       <KeyboardAvoidingView
-        style={s.body}
+        style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View style={s.content}>
           <Text style={s.title}>Введите код</Text>
           <Text style={s.subtitle}>
-            {"Отправили SMS на\n"}
-            <Text style={s.phoneHighlight}>{phone}</Text>
+            Отправили SMS на{"\n"}
+            <Text style={s.phoneEmph}>{phone}</Text>
           </Text>
 
           {testCode ? (
-            <View style={s.testHintBox}>
-              <Text style={s.testHintText}>Тестовый код: {testCode}</Text>
+            <View style={s.testHint}>
+              <Text style={s.testHintText}>Тестовый код · {testCode}</Text>
             </View>
           ) : null}
 
-          {/* Код: кнопочный ввод с цифровыми ячейками */}
           <Pressable style={s.codeWrap} onPress={() => inputRef.current?.focus()}>
-            {/* Скрытый TextInput, который принимает ввод */}
             <TextInput
               ref={inputRef}
               style={s.hiddenInput}
@@ -87,7 +96,6 @@ export default function VerifyScreen({ route, navigation }) {
               caretHidden
               textContentType="oneTimeCode"
             />
-            {/* Визуальные ячейки */}
             <View style={s.digits}>
               {Array.from({ length: CODE_LEN }, (_, i) => (
                 <View
@@ -95,7 +103,6 @@ export default function VerifyScreen({ route, navigation }) {
                   style={[
                     s.digitBox,
                     code.length === i && s.digitBoxActive,
-                    code[i] && s.digitBoxFilled,
                   ]}
                 >
                   <Text style={s.digitChar}>{code[i] || ""}</Text>
@@ -104,17 +111,27 @@ export default function VerifyScreen({ route, navigation }) {
             </View>
           </Pressable>
 
-          {!!err && <Text style={s.errText}>{err}</Text>}
+          {!!err && <Text style={s.err}>{err}</Text>}
 
           <Pressable
-            style={[s.btn, (loading || code.length < CODE_LEN) && s.btnDisabled]}
+            style={({ pressed }) => [
+              s.cta,
+              (loading || code.length < CODE_LEN) && { opacity: 0.4 },
+              pressed && code.length === CODE_LEN && !loading && { transform: [{ scale: 0.97 }] },
+            ]}
             onPress={() => submit()}
             disabled={loading || code.length < CODE_LEN}
           >
             {loading
-              ? <ActivityIndicator color="#1A1A1A" />
-              : <Text style={s.btnText}>Войти</Text>
+              ? <ActivityIndicator color={T.ink} />
+              : <Text style={s.ctaText}>Войти</Text>
             }
+          </Pressable>
+
+          <Pressable onPress={resend} disabled={secs > 0} hitSlop={10} style={s.resend}>
+            <Text style={[s.resendText, secs === 0 && { color: T.ink }]}>
+              {secs > 0 ? `Отправить ещё раз через ${secs}s` : "Отправить код ещё раз"}
+            </Text>
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -122,56 +139,57 @@ export default function VerifyScreen({ route, navigation }) {
   );
 }
 
-const BOX = (W - 56 - 24) / CODE_LEN; // ячейка с отступами
-
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#FFFFFF" },
+  root: { flex: 1, backgroundColor: T.paper },
 
-  backBtn: {
+  back: {
     flexDirection: "row", alignItems: "center",
     paddingHorizontal: 20, paddingVertical: 14,
     alignSelf: "flex-start",
   },
-  backArrow: { fontSize: 20, color: "#1A1A1A", marginRight: 8, lineHeight: 24 },
-  backLabel: { fontSize: 15, fontWeight: "600", color: "#1A1A1A" },
+  backArrow: { fontSize: 20, color: T.ink, marginRight: 8, lineHeight: 24 },
+  backLabel: { fontFamily: fonts.ui, fontSize: 15, fontWeight: "500", color: T.ink },
 
-  body: { flex: 1 },
-  content: { flex: 1, paddingHorizontal: 28, paddingTop: 24 },
+  content: { flex: 1, paddingHorizontal: 24, paddingTop: 12 },
 
-  title:    { fontSize: 34, fontWeight: "800", color: "#1A1A1A", marginBottom: 12 },
-  subtitle: { fontSize: 16, color: "#888888", lineHeight: 26, marginBottom: 32 },
-  phoneHighlight: { color: "#1A1A1A", fontWeight: "700" },
-
-  testHintBox: {
-    backgroundColor: "#FFFDE7", borderRadius: 12,
-    paddingHorizontal: 14, paddingVertical: 10,
-    marginBottom: 24, alignSelf: "flex-start",
+  title: {
+    fontFamily: fonts.display, fontSize: 28, fontWeight: "600",
+    color: T.ink, marginBottom: 12, letterSpacing: -0.4,
   },
-  testHintText: { color: "#B8860B", fontSize: 13, fontWeight: "600" },
+  subtitle: {
+    fontFamily: fonts.ui, fontSize: 15, color: T.graphite,
+    lineHeight: 22, marginBottom: 24,
+  },
+  phoneEmph: { color: T.ink, fontFamily: fonts.mono, fontWeight: "500" },
 
-  /* Ячейки кода */
+  testHint: {
+    backgroundColor: T.sunSoft, borderRadius: radii.r2,
+    paddingHorizontal: 12, paddingVertical: 8,
+    marginBottom: 20, alignSelf: "flex-start",
+  },
+  testHintText: { fontFamily: fonts.mono, color: T.sunDeep, fontSize: 13, fontWeight: "500" },
+
   codeWrap: { marginBottom: 24 },
-  hiddenInput: {
-    position: "absolute", opacity: 0, width: "100%", height: 72,
-  },
-  digits: { flexDirection: "row", gap: 10 },
+  hiddenInput: { position: "absolute", opacity: 0, width: "100%", height: 64 },
+  digits: { flexDirection: "row", gap: 12 },
   digitBox: {
-    width: BOX, height: 72, borderRadius: 16,
-    backgroundColor: "#F5F5F5", borderWidth: 2, borderColor: "#EEEEEE",
+    width: 56, height: 64, borderRadius: radii.r2,
+    backgroundColor: T.white, borderWidth: 1, borderColor: T.sand,
     alignItems: "center", justifyContent: "center",
   },
-  digitBoxActive: { borderColor: ACCENT, backgroundColor: "#FFFDE7" },
-  digitBoxFilled: { borderColor: "#1A1A1A", backgroundColor: "#F9F9F9" },
-  digitChar: { fontSize: 30, fontWeight: "700", color: "#1A1A1A" },
-
-  errText: { color: "#FF4444", fontSize: 14, marginBottom: 14 },
-
-  btn: {
-    backgroundColor: ACCENT, borderRadius: 16,
-    paddingVertical: 18, alignItems: "center",
-    shadowColor: ACCENT, shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3, shadowRadius: 10, elevation: 6,
+  digitBoxActive: { borderWidth: 2, borderColor: T.sun },
+  digitChar: {
+    fontFamily: fonts.display, fontSize: 28, fontWeight: "600", color: T.ink,
   },
-  btnDisabled: { opacity: 0.45, shadowOpacity: 0 },
-  btnText: { color: "#1A1A1A", fontSize: 17, fontWeight: "800" },
+
+  err: { fontFamily: fonts.ui, fontSize: 13, color: T.bad, marginBottom: 12, fontWeight: "500" },
+
+  cta: {
+    backgroundColor: T.sun, borderRadius: radii.r3,
+    height: 56, alignItems: "center", justifyContent: "center",
+  },
+  ctaText: { fontFamily: fonts.ui, fontSize: 17, fontWeight: "600", color: T.ink },
+
+  resend: { marginTop: 18, alignItems: "center" },
+  resendText: { fontFamily: fonts.mono, fontSize: 13, color: T.stone },
 });

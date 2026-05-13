@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"/>
+<title>Профсоюз Рассвет — фронтенд (пассажир, водитель, оператор)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  html, body { margin:0; padding:0; background:#f0eee9; }
+  body { font-family: "Inter", system-ui, sans-serif; }
+  * { box-sizing: border-box; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="tokens.js"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="android-frame.jsx"></script>
+<script type="text/babel" src="browser-window.jsx"></script>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="map.jsx"></script>
+<script type="text/babel" src="passenger.jsx"></script>
+<script type="text/babel" src="driver.jsx"></script>
+<script type="text/babel" src="operator.jsx"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const T = window.T;
+
+// Lightweight phone bezel — wraps a 360×740 screen with iOS or Android chrome look (visual only)
+function Phone({ os = 'ios', dark = false, children }) {
+  const isIOS = os === 'ios';
+  const W = 380, H = 800;
+  return (
+    <div style={{
+      width: W, height: H, borderRadius: 48, padding: 10,
+      background: '#0A0A08',
+      boxShadow: '0 30px 60px rgba(20,18,14,0.18), 0 8px 16px rgba(20,18,14,0.10), inset 0 0 0 1.5px #2a2a26',
+      position: 'relative',
+    }}>
+      <div style={{
+        width: '100%', height: '100%', borderRadius: 38, overflow: 'hidden',
+        background: dark ? T.ink : T.paper, position: 'relative',
+      }}>
+        {/* status bar */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, height: isIOS ? 44 : 32, zIndex: 10,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: isIOS ? '12px 28px 0' : '8px 16px 0',
+          color: dark ? T.paper : T.ink, fontSize: 13, fontWeight: 600,
+          fontFamily: isIOS ? '-apple-system, "SF Pro Text", system-ui' : 'Roboto, system-ui, sans-serif',
+          pointerEvents: 'none',
+        }}>
+          <span>{isIOS ? '9:41' : '9:30'}</span>
+          {isIOS && <div style={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)',
+            width: 110, height: 32, borderRadius: 18, background: '#0A0A08' }}/>}
+          <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+            {/* signal */}
+            <svg width="16" height="11" viewBox="0 0 16 11"><rect x="0" y="7" width="3" height="4" rx="0.6" fill="currentColor"/><rect x="4.5" y="5" width="3" height="6" rx="0.6" fill="currentColor"/><rect x="9" y="2.5" width="3" height="8.5" rx="0.6" fill="currentColor"/><rect x="13.5" y="0" width="3" height="11" rx="0.6" fill="currentColor"/></svg>
+            <svg width="14" height="11" viewBox="0 0 14 11"><path d="M7 3a7 7 0 0 1 4.95 2.05L13 4a8.7 8.7 0 0 0-12 0l1.05 1.05A7 7 0 0 1 7 3zm0 3a4 4 0 0 1 2.83 1.17L11 6a5.7 5.7 0 0 0-8 0l1.17 1.17A4 4 0 0 1 7 6z" fill="currentColor"/><circle cx="7" cy="9.3" r="1.3" fill="currentColor"/></svg>
+            <svg width="24" height="11" viewBox="0 0 24 11"><rect x="0.5" y="0.5" width="20" height="10" rx="2.5" fill="none" stroke="currentColor" strokeOpacity="0.4"/><rect x="2" y="2" width="17" height="7" rx="1.5" fill="currentColor"/><rect x="21.5" y="3.5" width="1.5" height="4" rx="0.6" fill="currentColor" fillOpacity="0.4"/></svg>
+          </div>
+        </div>
+
+        {/* content area — screens are 360×740, scaled to fit */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ transform: 'scale(1)', transformOrigin: 'center center' }}>
+            {children}
+          </div>
+        </div>
+
+        {/* home indicator */}
+        {isIOS ? (
+          <div style={{ position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)',
+            width: 134, height: 5, borderRadius: 3, background: dark ? T.paper : T.ink, opacity: 0.85, zIndex: 10 }}/>
+        ) : (
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 24,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 60px', zIndex: 10 }}>
+            <div style={{ width: 12, height: 12, border: `1.5px solid ${dark?T.paper:T.ink}`, opacity: 0.7 }}/>
+            <div style={{ width: 12, height: 12, borderRadius: '50%', border: `1.5px solid ${dark?T.paper:T.ink}`, opacity: 0.7 }}/>
+            <div style={{ width: 12, height: 1.5, background: dark?T.paper:T.ink, opacity: 0.7 }}/>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Lightweight desktop browser frame
+function Desktop({ url = 'operator.рассвет.рф/dashboard', children }) {
+  const W = 1500, H = 940;
+  return (
+    <div style={{ width: W, height: H, borderRadius: 16, background: '#1a1a17', boxShadow: '0 30px 60px rgba(20,18,14,0.22)', overflow: 'hidden' }}>
+      <div style={{ height: 38, display: 'flex', alignItems: 'center', padding: '0 14px', gap: 14, background: '#1f1f1c' }}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#ff5f57' }}/>
+          <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#febc2e' }}/>
+          <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#28c840' }}/>
+        </div>
+        <div style={{ flex: 1, height: 24, borderRadius: 6, background: '#0e0e0c', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: '#9aa0a6', fontSize: 12, fontFamily: 'JetBrains Mono, ui-monospace, monospace' }}>
+          🔒 {url}
+        </div>
+        <div style={{ width: 60 }}/>
+      </div>
+      <div style={{ width: W, height: H - 38, overflow: 'hidden' }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+const note = (children, { color = T.sun } = {}) => (
+  <div style={{ fontSize: 13, lineHeight: 1.5, color: T.graphite, fontFamily: T.fontUI, maxWidth: 280 }}>
+    <div style={{ width: 24, height: 2, background: color, marginBottom: 8 }}/>
+    {children}
+  </div>
+);
+
+function App() {
+  return (
+    <DesignCanvas
+      title="Профсоюз Рассвет"
+      subtitle="Такси-сервис · Севастополь · фронтенд · 27 апр 2026"
+    >
+      {/* SECTION 0 — design system */}
+      <DCSection id="ds" title="Дизайн-система" subtitle="Минимализм · тёплый монохром · один акцент рассвета">
+        <DCArtboard id="ds-1" label="Палитра, тип, ритм" width={760} height={460}>
+          <div style={{ width: 760, height: 460, background: T.paper, padding: 32, fontFamily: T.fontUI, color: T.ink, display: 'flex', flexDirection: 'column', gap: 18 }}>
+            <div>
+              <div style={{ fontFamily: T.fontDisplay, fontSize: 36, fontWeight: 600, letterSpacing: '-0.02em' }}>Рассвет / Sunrise</div>
+              <div style={{ fontSize: 12, color: T.graphite, fontFamily: T.fontMono, marginTop: 4 }}>Inter Tight · Inter · JetBrains Mono</div>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {[['ink',T.ink,'#fff'],['ink2',T.ink2,'#fff'],['graphite',T.graphite,'#fff'],['stone',T.stone,'#fff'],['mist',T.mist,T.ink],['sand',T.sand,T.ink],['paper',T.paper,T.ink],['white',T.white,T.ink],['sun',T.sun,T.ink]].map(([n,c,fg],i)=>(
+                <div key={i} style={{ flex: 1, height: 80, borderRadius: 10, background: c, color: fg, padding: 10, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', border: c===T.white?`1px solid ${T.sand}`:'none' }}>
+                  <span style={{ fontSize: 11, fontFamily: T.fontMono, opacity: 0.7 }}>{n}</span>
+                  <span style={{ fontSize: 10, fontFamily: T.fontMono, opacity: 0.6 }}>{c}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end' }}>
+              <div>
+                <div style={{ fontFamily: T.fontDisplay, fontSize: 56, fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1 }}>410 ₽</div>
+                <div style={{ fontSize: 11, color: T.graphite, fontFamily: T.fontMono, marginTop: 4 }}>display · 56 · 600</div>
+              </div>
+              <div>
+                <div style={{ fontFamily: T.fontDisplay, fontSize: 28, fontWeight: 600 }}>Заголовок</div>
+                <div style={{ fontSize: 11, color: T.graphite, fontFamily: T.fontMono, marginTop: 4 }}>display · 28 · 600</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 500 }}>Тариф «Комфорт»</div>
+                <div style={{ fontSize: 11, color: T.graphite, fontFamily: T.fontMono, marginTop: 4 }}>body · 16 · 500</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, fontFamily: T.fontMono, color: T.graphite, letterSpacing: '0.06em', textTransform: 'uppercase' }}>SPb · 27.04.2026</div>
+                <div style={{ fontSize: 11, color: T.graphite, fontFamily: T.fontMono, marginTop: 4 }}>mono · 11 · uppercase</div>
+              </div>
+            </div>
+            <div style={{ flex: 1, padding: 18, background: T.ink, color: T.paper, borderRadius: 14, display: 'flex', alignItems: 'center', gap: 16 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 8, background: T.sun }}/>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 12, color: T.mist, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Принцип</div>
+                <div style={{ fontSize: 14, marginTop: 4, lineHeight: 1.5 }}>Тёплый бумажный фон, чёрный графит для текста, единственный акцент — оранжевый рассвета. Никаких градиентов, минимум иконографики, табличные цифры моноширинно.</div>
+              </div>
+            </div>
+          </div>
+        </DCArtboard>
+      </DCSection>
+
+      {/* SECTION 1 — Passenger */}
+      <DCSection id="pax" title="Пассажир" subtitle="iOS · 5 экранов · светлая тема">
+        <DCArtboard id="pax-1" label="01 · Логин" width={400} height={840}>
+          <Phone os="ios" dark><PaxLogin/></Phone>
+        </DCArtboard>
+        <DCArtboard id="pax-2" label="02 · Главный · карта + поиск" width={400} height={840}>
+          <Phone os="ios"><PaxMain/></Phone>
+        </DCArtboard>
+        <DCArtboard id="pax-3" label="03 · Тариф · подтверждение" width={400} height={840}>
+          <Phone os="ios"><PaxTariff/></Phone>
+        </DCArtboard>
+        <DCArtboard id="pax-4" label="04 · Поиск водителя" width={400} height={840}>
+          <Phone os="ios"><PaxSearching/></Phone>
+        </DCArtboard>
+        <DCArtboard id="pax-5" label="05 · В поездке" width={400} height={840}>
+          <Phone os="ios"><PaxRide/></Phone>
+        </DCArtboard>
+        <DCArtboard id="pax-note" label="Заметки" width={300} height={200}>
+          <div style={{ width: 300, height: 200, background: T.paper, padding: 24 }}>
+            {note(<>
+              <div style={{ color: T.ink, fontWeight: 600, marginBottom: 4 }}>Пассажир — iOS</div>
+              Тёмный логин с тёплым «закатным» свечением в духе названия. Главный экран — карта Севастополя как первичная поверхность, шторка снизу с ритмом «откуда → куда» и быстрыми местами (Графская пристань, ТЦ Муссон). Цена показана крупно и табличными цифрами — без перегруза.
+            </>)}
+          </div>
+        </DCArtboard>
+      </DCSection>
+
+      {/* SECTION 2 — Driver */}
+      <DCSection id="drv" title="Водитель" subtitle="Android · 9 экранов · тёмная тема для ночного вождения">
+        <DCArtboard id="drv-1" label="01 · Логин (парковый код)" width={400} height={840}>
+          <Phone os="android" dark><DrvLogin/></Phone>
+        </DCArtboard>
+        <DCArtboard id="drv-2" label="02 · Главный · карта" width={400} height={840}>
+          <Phone os="android" dark><DrvMap/></Phone>
+        </DCArtboard>
+        <DCArtboard id="drv-3" label="03 · Новый заказ" width={400} height={840}>
+          <Phone os="android" dark><DrvNewOrder/></Phone>
+        </DCArtboard>
+        <DCArtboard id="drv-4" label="04 · Навигация к пассажиру" width={400} height={840}>
+          <Phone os="android" dark><DrvNav/></Phone>
+        </DCArtboard>
+        <DCArtboard id="drv-5" label="05 · В поездке" width={400} height={840}>
+          <Phone os="android" dark><DrvRiding/></Phone>
+        </DCArtboard>
+        <DCArtboard id="drv-6" label="06 · Завершение + рейтинг" width={400} height={840}>
+          <Phone os="android" dark><DrvComplete/></Phone>
+        </DCArtboard>
+        <DCArtboard id="drv-7" label="07 · Статистика смены" width={400} height={840}>
+          <Phone os="android" dark><DrvStats/></Phone>
+        </DCArtboard>
+        <DCArtboard id="drv-8" label="08 · Чат с пассажиром" width={400} height={840}>
+          <Phone os="android" dark><DrvChat/></Phone>
+        </DCArtboard>
+        <DCArtboard id="drv-9" label="09 · Профиль и документы" width={400} height={840}>
+          <Phone os="android" dark><DrvProfile/></Phone>
+        </DCArtboard>
+        <DCArtboard id="drv-note" label="Заметки" width={300} height={220}>
+          <div style={{ width: 300, height: 220, background: T.paper, padding: 24 }}>
+            {note(<>
+              <div style={{ color: T.ink, fontWeight: 600, marginBottom: 4 }}>Водитель — Android, dark</div>
+              Тёмная тема для ночных смен и читаемости карты. Крупные цифры тарифа и стрелки навигации — водитель должен считывать UI боковым зрением. Карточка нового заказа всегда на светлой бумаге — заметна на любой подложке. Документы в профиле флагуются цветом просрочки.
+            </>)}
+          </div>
+        </DCArtboard>
+      </DCSection>
+
+      {/* SECTION 3 — Operator */}
+      <DCSection id="op" title="Оператор · веб" subtitle="1500×900 · 8 разделов">
+        <DCArtboard id="op-1" label="01 · Дашборд" width={1520} height={970}>
+          <Desktop url="operator.рассвет.рф/dashboard"><OpDashboard/></Desktop>
+        </DCArtboard>
+        <DCArtboard id="op-2" label="02 · Карта-диспетчерская" width={1520} height={970}>
+          <Desktop url="operator.рассвет.рф/map"><OpMap/></Desktop>
+        </DCArtboard>
+        <DCArtboard id="op-3" label="03 · Заказы · фильтры" width={1520} height={970}>
+          <Desktop url="operator.рассвет.рф/orders"><OpOrders/></Desktop>
+        </DCArtboard>
+        <DCArtboard id="op-4" label="04 · Управление водителями" width={1520} height={970}>
+          <Desktop url="operator.рассвет.рф/drivers"><OpDrivers/></Desktop>
+        </DCArtboard>
+        <DCArtboard id="op-5" label="05 · Управление пассажирами" width={1520} height={970}>
+          <Desktop url="operator.рассвет.рф/passengers"><OpPassengers/></Desktop>
+        </DCArtboard>
+        <DCArtboard id="op-6" label="06 · Тарифы и зоны" width={1520} height={970}>
+          <Desktop url="operator.рассвет.рф/tariffs"><OpTariffs/></Desktop>
+        </DCArtboard>
+        <DCArtboard id="op-7" label="07 · Чаты поддержки" width={1520} height={970}>
+          <Desktop url="operator.рассвет.рф/support"><OpSupport/></Desktop>
+        </DCArtboard>
+        <DCArtboard id="op-8" label="08 · Аналитика и отчёты" width={1520} height={970}>
+          <Desktop url="operator.рассвет.рф/analytics"><OpAnalytics/></Desktop>
+        </DCArtboard>
+        <DCArtboard id="op-note" label="Заметки" width={420} height={260}>
+          <div style={{ width: 420, height: 260, background: T.paper, padding: 28 }}>
+            {note(<>
+              <div style={{ color: T.ink, fontWeight: 600, marginBottom: 4 }}>Оператор — веб</div>
+              Сайдбар-навигация на 8 разделов с живыми бейджами (47 в работе, 3 в ожидании ответа). Дашборд — четыре крупные метрики, бар-график по часам и лента инцидентов в реальном времени. Карта-диспетчерская объединяет всё: слои фильтрации слева, карточка выбранного заказа справа на самой карте.
+              <div style={{ marginTop: 10, fontSize: 12, color: T.ink, fontFamily: T.fontMono }}>↗ нажмите ⤢ на любом фрейме<br/>чтобы открыть фуллскрин</div>
+            </>)}
+          </div>
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

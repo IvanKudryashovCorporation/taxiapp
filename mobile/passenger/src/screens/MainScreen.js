@@ -14,38 +14,29 @@ import LeafletMap from "../components/LeafletMap";
 import NavBar from "../components/NavBar";
 import ChatBubble from "../components/ChatBubble";
 import OrderModal from "../components/OrderModal";
+import { Icon } from "../components/Icon";
+import { T, fonts, radii, shadows } from "../theme";
 
-const DEFAULT_LAT = 55.7558;
-const DEFAULT_LON = 37.6173;
+const DEFAULT_LAT = 44.6166;
+const DEFAULT_LON = 33.5254;
 const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get("window");
-const SHEET_EXPANDED_H  = SCREEN_H * 0.60;
-const SHEET_COLLAPSED_H = 90;
+const SHEET_EXPANDED_H  = SCREEN_H * 0.62;
+const SHEET_COLLAPSED_H = 96;
 
-/* ─── Light-theme palette ─── */
-const L = {
-  sheet:   "#FFFFFF",
-  bg:      "#F7F7F7",
-  input:   "#F2F2F2",
-  border:  "#EBEBEB",
-  text:    "#1A1A1A",
-  muted:   "#8A8A8A",
-  dim:     "#C8C8C8",
-  accent:  "#F5CF31",
-  actText: "#1A1A1A",
-  dotA:    "#F5CF31",
-  dotB:    "#1A1A1A",
-  danger:  "#FF5A4D",
-  info:    "#5CB8FF",
-  success: "#3CD48D",
-};
+const QUICK_PLACES = [
+  { icon: "home",      label: "Дом · Героев Сталинграда" },
+  { icon: "briefcase", label: "Работа" },
+  { icon: "heart",     label: "Графская пристань" },
+];
 
-/* ─── Utilities ─── */
-function formatMoney(v) { return `${Math.round(Number(v || 0)).toLocaleString("ru-RU")} ₽`; }
+function formatMoney(v) {
+  return `${Math.round(Number(v || 0)).toLocaleString("ru-RU").replace(",", " ")} ₽`;
+}
 function formatDistance(m) { return m >= 1000 ? `${(m / 1000).toFixed(1)} км` : `${Math.round(m)} м`; }
 function formatDuration(s) {
   const min = Math.round(s / 60);
-  if (min < 60) return `~${min} мин`;
-  return `~${Math.floor(min / 60)} ч ${min % 60} мин`;
+  if (min < 60) return `${min} мин`;
+  return `${Math.floor(min / 60)} ч ${min % 60} мин`;
 }
 function humanStatus(s) {
   return ({
@@ -56,21 +47,13 @@ function humanStatus(s) {
   }[s] || s || "—");
 }
 
-const QUICK_PLACES = [
-  { icon: "🏠", label: "Дом",      hint: "3 мин"  },
-  { icon: "💼", label: "Работа",   hint: "24 мин" },
-  { icon: "🛍", label: "Торговый", hint: "18 мин" },
-  { icon: "＋", label: "Добавить", hint: ""       },
-];
-
-/* ─── Pickup pin ─── */
 function PickupPin({ loading }) {
   return (
     <View style={pin.wrap}>
       <View style={pin.box}>
         {loading
-          ? <ActivityIndicator color="#1A1A1A" size={22} />
-          : <Text style={{ fontSize: 24 }}>🧍</Text>
+          ? <ActivityIndicator color={T.ink} size={20} />
+          : <View style={pin.dot} />
         }
       </View>
       <View style={pin.stem} />
@@ -79,16 +62,16 @@ function PickupPin({ loading }) {
 }
 const pin = StyleSheet.create({
   wrap: { alignItems: "center" },
-  box:  {
-    width: 52, height: 52, backgroundColor: L.accent, borderRadius: 18,
+  box: {
+    width: 28, height: 28, backgroundColor: T.sun, borderRadius: 14,
     alignItems: "center", justifyContent: "center",
-    shadowColor: "#000", shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.35, shadowRadius: 10, elevation: 12,
+    borderWidth: 3, borderColor: T.white,
+    ...shadows.s2,
   },
-  stem: { width: 4, height: 20, backgroundColor: L.actText, borderBottomLeftRadius: 3, borderBottomRightRadius: 3 },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: T.white },
+  stem: { width: 2, height: 14, backgroundColor: T.ink, marginTop: 2, borderRadius: 1 },
 });
 
-/* ─── Main Screen ─── */
 export default function MainScreen() {
   const cityLat  = useStore((s) => s.cityLat);
   const cityLon  = useStore((s) => s.cityLon);
@@ -97,7 +80,6 @@ export default function MainScreen() {
   const history      = useStore((s) => s.history);
   const wsStatus     = useStore((s) => s.wsStatus);
   const refreshState = useStore((s) => s.refreshState);
-  const logout       = useStore((s) => s.logout);
   const setLastQuote = useStore((s) => s.setLastQuote);
 
   const mapRef       = useRef(null);
@@ -142,9 +124,7 @@ export default function MainScreen() {
       const collapse = g.vy > 0.3 || (g.vy >= -0.3 && currentH < mid);
       Animated.spring(sheetH, {
         toValue: collapse ? SHEET_COLLAPSED_H : SHEET_EXPANDED_H,
-        useNativeDriver: false,
-        tension: 60,
-        friction: 11,
+        useNativeDriver: false, tension: 60, friction: 11,
       }).start();
       setSheetExpanded(!collapse);
     },
@@ -153,9 +133,7 @@ export default function MainScreen() {
   useEffect(() => {
     Animated.spring(sheetH, {
       toValue: sheetExpanded ? SHEET_EXPANDED_H : SHEET_COLLAPSED_H,
-      useNativeDriver: false,
-      tension: 60,
-      friction: 11,
+      useNativeDriver: false, tension: 60, friction: 11,
     }).start();
   }, [sheetExpanded]); // eslint-disable-line
 
@@ -222,8 +200,8 @@ export default function MainScreen() {
 
   useEffect(() => {
     const markers = [];
-    if (pickupLat  != null) markers.push({ lat: pickupLat,  lon: pickupLon,  color: "#FF5A4D", label: "А" });
-    if (dropoffLat != null) markers.push({ lat: dropoffLat, lon: dropoffLon, color: "#5CB8FF", label: "Б" });
+    if (pickupLat  != null) markers.push({ lat: pickupLat,  lon: pickupLon,  color: T.sun, label: "А" });
+    if (dropoffLat != null) markers.push({ lat: dropoffLat, lon: dropoffLon, color: T.ink, label: "Б" });
     mapRef.current?.setMarkers(markers);
   }, [pickupLat, pickupLon, dropoffLat, dropoffLon]);
 
@@ -342,11 +320,6 @@ export default function MainScreen() {
 
   const activeText    = activeField === "pickup" ? pickupAddr : dropoffAddr;
   const orderBtnReady = pickupLat != null && dropoffLat != null;
-  const orderBtnText  = orderBtnReady && quote
-    ? `Заказать  ·  ${formatMoney(quote.fare_total)}`
-    : orderBtnReady
-    ? "Заказать"
-    : "Выберите маршрут";
 
   return (
     <View style={s.root}>
@@ -356,54 +329,55 @@ export default function MainScreen() {
         onCenterChange={handleCenterChange} onReady={handleMapReady}
       />
 
-      {/* ── Верхние кнопки над картой (Yandex Go стиль) ── */}
+      {/* Top floating bar (Yandex Go style) */}
       {tab === "create" && !activeField && (
-        <SafeAreaView style={s.mapTopRow} pointerEvents="box-none">
-          {/* Гамбургер */}
-          <Pressable style={s.mapIconBtn} onPress={() => {}}>
-            <Text style={s.mapIconText}>☰</Text>
+        <SafeAreaView edges={["top"]} style={s.topRow} pointerEvents="box-none">
+          <Pressable style={[s.iconChip, shadows.s2]} hitSlop={8}>
+            <Icon name="menu" size={20} color={T.ink} />
           </Pressable>
+          <Pressable
+            style={[s.searchPill, shadows.s2]}
+            onPress={() => openSearch("dropoff")}
+          >
+            <Icon name="search" size={18} color={T.graphite} />
+            <Text style={s.searchPillText}>Куда едем?</Text>
+          </Pressable>
+          <View style={[s.avatarChip, shadows.s2]}>
+            <Text style={s.avatarText}>АК</Text>
+          </View>
+        </SafeAreaView>
+      )}
 
-          {/* WS-статус (маленькая точка) */}
+      {/* WS status (subtle) */}
+      {tab === "create" && !activeField && wsStatus !== "online" && (
+        <SafeAreaView edges={["top"]} style={s.wsWrap} pointerEvents="none">
           <View style={s.wsPill}>
-            <View style={[s.wsDot, { backgroundColor: wsStatus === "online" ? "#3CD48D" : "#AAAAAA" }]} />
-            <Text style={s.wsText}>
-              {wsStatus === "online" ? "онлайн" : wsStatus === "connecting" ? "…" : "офлайн"}
-            </Text>
-          </View>
-
-          {/* Бонусы */}
-          <Pressable style={s.bonusBtn} onPress={() => {}}>
-            <Text style={s.bonusBtnText}>🎁 Бонусы</Text>
-          </Pressable>
-        </SafeAreaView>
-      )}
-
-      {/* ── Плашка адреса (над картой) ── */}
-      {tab === "create" && !activeField && (
-        <SafeAreaView style={s.addrBarOuter} pointerEvents="none">
-          <View style={s.addrBar}>
-            <Text style={s.addrBarLabel}>Точка подачи</Text>
-            <Text style={s.addrBarText} numberOfLines={1}>
-              {geocoding ? "уточняем…" : (centerAddress || "Переместите карту")}
-            </Text>
+            <View style={[s.wsDot, { backgroundColor: wsStatus === "connecting" ? T.warn : T.bad }]} />
+            <Text style={s.wsText}>{wsStatus === "connecting" ? "соединение…" : "офлайн"}</Text>
           </View>
         </SafeAreaView>
       )}
 
-      {/* ── Пин ── */}
+      {/* My-location FAB */}
       {tab === "create" && !activeField && (
+        <Pressable style={[s.locFab, shadows.s2]} onPress={() => {}}>
+          <Icon name="loc" size={20} color={T.ink} />
+        </Pressable>
+      )}
+
+      {/* Pickup pin (centered on map) */}
+      {tab === "create" && !activeField && pickupLat == null && (
         <View style={s.pinOverlay} pointerEvents="none">
           <PickupPin loading={geocoding} />
         </View>
       )}
 
-      {/* ── Поиск: полноэкранный оверлей ── */}
+      {/* Search overlay (full-screen above keyboard) */}
       {activeField && (
         <>
           <SafeAreaView style={[s.sugPanel, { bottom: keyboardH + 64 }]}>
             {activeSugLoading
-              ? <ActivityIndicator color={L.muted} style={{ marginTop: 32 }} />
+              ? <ActivityIndicator color={T.stone} style={{ marginTop: 32 }} />
               : (
                 <FlatList
                   data={activeSug}
@@ -414,11 +388,11 @@ export default function MainScreen() {
                       style={({ pressed }) => [
                         s.sugRow,
                         index < activeSug.length - 1 && s.sugRowSep,
-                        pressed && { backgroundColor: L.bg },
+                        pressed && { backgroundColor: T.paper },
                       ]}
                       onPress={() => selectSug(item)}
                     >
-                      <Text style={s.sugIcon}>📍</Text>
+                      <Icon name="pin" size={18} color={T.graphite} style={{ marginRight: 10, marginTop: 1 }} />
                       <Text style={s.sugRowText} numberOfLines={2}>{item.label}</Text>
                     </Pressable>
                   )}
@@ -435,199 +409,209 @@ export default function MainScreen() {
               )}
           </SafeAreaView>
 
-          {/* Строка ввода */}
           <View style={[s.searchBarFixed, { bottom: keyboardH }]}>
             <Pressable onPress={closeSearch} style={s.searchBackBtn} hitSlop={12}>
-              <Text style={s.searchBackText}>←</Text>
+              <Icon name="back" size={20} color={T.ink} />
             </Pressable>
             <TextInput
               style={s.searchInput}
               value={activeText}
               onChangeText={onActiveSearch}
               placeholder={activeField === "pickup" ? "Откуда поедете…" : "Куда поедете…"}
-              placeholderTextColor={L.dim}
+              placeholderTextColor={T.mist}
               autoFocus
               returnKeyType="search"
             />
             {activeText.length > 0 && (
               <Pressable onPress={clearActive} style={s.searchClearBtn} hitSlop={8}>
-                <Text style={s.searchClearText}>✕</Text>
+                <Icon name="close" size={18} color={T.stone} />
               </Pressable>
             )}
           </View>
         </>
       )}
 
-      {/* ── Нижняя шторка ── */}
-      <Animated.View style={[s.sheet, { bottom: 0, height: sheetH }]}>
-
-        {/* Ручка drag */}
+      {/* Bottom sheet */}
+      <Animated.View style={[s.sheet, shadows.s3, { bottom: 0, height: sheetH }]}>
         <View {...panResponder.panHandlers} style={s.handleWrap}>
           <Pressable onPress={() => setSheetExpanded((v) => !v)} hitSlop={10}>
             <View style={s.handle} />
           </Pressable>
         </View>
 
-        {/* ── Вкладка: создать заказ ── */}
         {!activeField && sheetExpanded && tab === "create" && (
           <ScrollView
             contentContainerStyle={s.sheetInner}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-
-            {/* ── Адресная секция ── */}
-            <View style={s.addrSection}>
-
-              {/* Откуда */}
+            {/* Address card */}
+            <View style={s.addrCard}>
               <View style={s.addrRow}>
                 <View style={s.dotCol}>
                   <View style={s.dotA} />
                   <View style={s.dotLine} />
                 </View>
-                <Pressable style={s.addrFieldWrap} onPress={() => openSearch("pickup")}>
-                  <Text style={s.addrLabel}>Откуда</Text>
+                <Pressable style={s.addrField} onPress={() => openSearch("pickup")}>
+                  <Text style={s.addrLabel}>ОТКУДА</Text>
                   <Text
                     style={[s.addrValue, !pickupAddr && s.addrPlaceholder]}
                     numberOfLines={1}
                   >
-                    {pickupAddr || "Ваше местоположение"}
+                    {pickupAddr || (centerAddress || "Ваше местоположение")}
                   </Text>
-                </Pressable>
-                <Pressable style={s.addrRightBtn} onPress={useCenterForPickup}>
-                  <Text style={s.addrRightBtnText}>Подъезд ›</Text>
                 </Pressable>
               </View>
 
-              {/* Разделитель */}
-              <View style={s.addrDivider} />
+              <View style={s.addrDashedDivider} />
 
-              {/* Куда */}
               <View style={s.addrRow}>
                 <View style={s.dotCol}>
                   <View style={s.dotB} />
                 </View>
-                <Pressable style={s.addrFieldWrap} onPress={() => openSearch("dropoff")}>
-                  <Text style={s.addrLabel}>Куда</Text>
+                <Pressable style={s.addrField} onPress={() => openSearch("dropoff")}>
+                  <Text style={s.addrLabel}>КУДА</Text>
                   <Text
                     style={[s.addrValue, !dropoffAddr && s.addrPlaceholder]}
                     numberOfLines={1}
                   >
-                    {dropoffAddr || "Введите адрес"}
+                    {dropoffAddr || "Куда едем?"}
                   </Text>
                 </Pressable>
-                <Pressable style={s.addrPlusBtn} onPress={() => openSearch("dropoff")}>
-                  <Text style={s.addrPlusBtnText}>+</Text>
+                <Pressable style={s.addrPlus} onPress={() => openSearch("dropoff")} hitSlop={8}>
+                  <Icon name="plus" size={16} color={T.graphite} />
                 </Pressable>
               </View>
             </View>
 
-            {/* ── Быстрые места: 2×2 сетка ── */}
-            <View style={s.quickGrid}>
+            {/* Quick places (horizontal chips per spec §6.1.3) */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={s.chipsRow}
+            >
               {QUICK_PLACES.map((p) => (
                 <Pressable
                   key={p.label}
-                  style={({ pressed }) => [s.quickCard, pressed && { opacity: 0.72 }]}
+                  style={({ pressed }) => [s.chip, pressed && { backgroundColor: T.sand }]}
                   onPress={() => openSearch("dropoff")}
                 >
-                  <Text style={s.quickCardIcon}>{p.icon}</Text>
-                  <Text style={s.quickCardLabel}>{p.label}</Text>
-                  {!!p.hint && <Text style={s.quickCardHint}>{p.hint}</Text>}
+                  <Icon name={p.icon} size={15} color={T.graphite} style={{ marginRight: 8 }} />
+                  <Text style={s.chipText}>{p.label}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+
+            {/* Recent rides hint */}
+            <View style={s.recentHeader}>
+              <Text style={s.recentLabel}>ПОСЛЕДНИЕ</Text>
+              <Pressable hitSlop={8}>
+                <Text style={s.recentLink}>Все →</Text>
+              </Pressable>
+            </View>
+            <View>
+              {(history.slice(0, 2).length === 0
+                ? [{ label: "ТЦ «Муссон» · ул. Вакуленчука, 29" }, { label: "Аквамарин · набережная Корнилова, 1" }]
+                : history.slice(0, 2).map((h) => ({ label: h.dropoff_address }))
+              ).map((row, i, arr) => (
+                <Pressable
+                  key={i}
+                  style={[s.recentRow, i < arr.length - 1 && s.recentRowSep]}
+                  onPress={() => openSearch("dropoff")}
+                >
+                  <View style={s.recentIconBox}>
+                    <Icon name="clock" size={14} color={T.graphite} />
+                  </View>
+                  <Text style={s.recentText} numberOfLines={1}>{row.label}</Text>
+                  <Icon name="arrow" size={14} color={T.stone} />
                 </Pressable>
               ))}
             </View>
 
-            {/* ── Маршрут: км + время ── */}
+            {/* Route info chip (when route is computed) */}
             {routeInfo && (
-              <View style={s.routeInfo}>
-                <Text style={s.routeInfoText}>
-                  {formatDistance(routeInfo.distanceM)}{"   ·   "}{formatDuration(routeInfo.durationS)}
+              <View style={s.routeChip}>
+                <Text style={s.routeChipText}>
+                  {formatDistance(routeInfo.distanceM)}  ·  {formatDuration(routeInfo.durationS)}
                 </Text>
               </View>
             )}
 
-            {/* ── Тарифы ── */}
+            {/* Tariffs */}
             <View style={s.tariffHeader}>
-              <Text style={s.tariffHeaderTitle}>Тарифы</Text>
-              <Pressable onPress={() => {}}>
-                <Text style={s.tariffHeaderLink}>Все тарифы ›</Text>
-              </Pressable>
+              <Text style={s.sectionTitle}>Тарифы</Text>
             </View>
-
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={s.tariffRow}
-              style={{ marginBottom: 14 }}
             >
               {CAR_CLASSES.map((c) => {
                 const selected = carClass === c.id;
-                const price = selected && quote
-                  ? formatMoney(quote.fare_total)
-                  : c.priceHint;
+                const price = selected && quote ? formatMoney(quote.fare_total) : (c.priceHint || "—");
                 return (
                   <Pressable
                     key={c.id}
-                    style={[s.tariffCard, selected && s.tariffCardSelected]}
+                    style={[s.tariffCard, selected && s.tariffCardSel]}
                     onPress={() => setCarClass(c.id)}
                   >
-                    <Text style={s.tariffIcon}>{c.icon}</Text>
-                    <Text style={[s.tariffLabel, selected && s.tariffLabelSel]}>
-                      {c.label}
-                    </Text>
-                    <Text style={[s.tariffPrice, selected && s.tariffPriceSel]}>{price}</Text>
-                    {selected && <View style={s.tariffActiveDot} />}
+                    <Icon name="car" size={28} color={selected ? T.ink : T.graphite} />
+                    <Text style={[s.tariffLabel, selected && { color: T.ink }]}>{c.label}</Text>
+                    <Text style={[s.tariffPrice, selected && { color: T.ink }]}>{price}</Text>
+                    <Text style={s.tariffEta}>4 мин</Text>
                   </Pressable>
                 );
               })}
             </ScrollView>
 
-            {/* ── Комментарий ── */}
+            {/* Comment */}
             <TextInput
               value={comment}
               onChangeText={setComment}
               placeholder="Комментарий водителю"
-              placeholderTextColor={L.dim}
+              placeholderTextColor={T.mist}
               style={s.comment}
             />
 
-            {/* ── Кнопка ЗАКАЗАТЬ ── */}
+            {/* CTA — single primary, sun bg */}
             <Pressable
               onPress={doCreate}
-              style={[s.orderBtn, !orderBtnReady && s.orderBtnDisabled]}
+              style={({ pressed }) => [
+                s.cta,
+                !orderBtnReady && { opacity: 0.4 },
+                pressed && orderBtnReady && { transform: [{ scale: 0.97 }] },
+              ]}
               disabled={busy || !orderBtnReady}
             >
-              {busy ? (
-                <ActivityIndicator color={L.actText} />
-              ) : (
-                <View style={s.orderBtnInner}>
-                  <Text style={s.orderBtnText}>{orderBtnText}</Text>
-                  <View style={s.orderBtnFilter}>
-                    <Text style={s.orderBtnFilterIcon}>≡</Text>
-                  </View>
-                </View>
-              )}
+              {busy
+                ? <ActivityIndicator color={T.ink} />
+                : (
+                  <Text style={s.ctaText}>
+                    {orderBtnReady && quote
+                      ? `Заказать  ·  ${formatMoney(quote.fare_total)}`
+                      : orderBtnReady
+                      ? "Заказать"
+                      : "Выберите маршрут"}
+                  </Text>
+                )
+              }
             </Pressable>
 
             {!!status && <Text style={s.statusTxt}>{status}</Text>}
           </ScrollView>
         )}
 
-        {/* ── История ── */}
         {!activeField && sheetExpanded && tab === "history" && (
           <HistoryTab items={history} />
         )}
 
-        {/* ── Текущий заказ ── */}
         {!activeField && sheetExpanded && tab === "ride" && currentOrder && (
           <RideTab order={currentOrder} onRefresh={refreshState} />
         )}
 
-        {/* NavBar */}
         {!activeField && <NavBar active={tab} onChange={setTab} />}
       </Animated.View>
 
-      {/* ── Модал активного заказа ── */}
       {currentOrder && (
         <OrderModal
           order={currentOrder}
@@ -639,7 +623,6 @@ export default function MainScreen() {
   );
 }
 
-/* ─── Вкладка: активный заказ ─── */
 function RideTab({ order, onRefresh }) {
   const [text,     setText]     = useState("");
   const [messages, setMessages] = useState([]);
@@ -659,7 +642,7 @@ function RideTab({ order, onRefresh }) {
   if (!order) {
     return (
       <View style={{ padding: 20 }}>
-        <Text style={{ color: L.muted }}>Нет активного заказа.</Text>
+        <Text style={{ color: T.graphite }}>Нет активного заказа.</Text>
       </View>
     );
   }
@@ -687,13 +670,13 @@ function RideTab({ order, onRefresh }) {
     <ScrollView contentContainerStyle={s.sheetInner} keyboardShouldPersistTaps="handled">
       <View style={s.infoCard}>
         <Text style={s.infoTitle}>{humanStatus(order.status)}</Text>
-        <Text style={s.infoLine}>Заказ {order.public_id}</Text>
+        <Text style={s.infoLine}>Заказ <Text style={s.mono}>{order.public_id}</Text></Text>
         <Text style={s.infoLine}>{order.pickup_address} → {order.dropoff_address}</Text>
         <Text style={s.infoLine}>Водитель: {order.driver_full_name || "ищем…"}</Text>
         <Text style={s.infoLine}>
           {[order.vehicle_make, order.vehicle_model, order.vehicle_plate].filter(Boolean).join(" ") || "машина будет назначена"}
         </Text>
-        <Text style={s.infoLine}>Цена: {formatMoney(order.fare_total)}</Text>
+        <Text style={s.infoLine}>Цена: <Text style={s.mono}>{formatMoney(order.fare_total)}</Text></Text>
       </View>
 
       <Pressable onPress={cancel} style={s.cancelBtn}>
@@ -703,7 +686,7 @@ function RideTab({ order, onRefresh }) {
       <Text style={s.sectionTitle}>Чат с водителем</Text>
       <View style={s.chatBox}>
         {messages.length === 0
-          ? <Text style={{ color: L.muted, fontSize: 13 }}>Сообщений пока нет.</Text>
+          ? <Text style={{ color: T.graphite, fontSize: 13 }}>Сообщений пока нет.</Text>
           : messages.map((m) => (
             <ChatBubble key={m.id} text={m.text} mine={m.sender_type === "passenger"} />
           ))}
@@ -713,13 +696,13 @@ function RideTab({ order, onRefresh }) {
           value={text}
           onChangeText={setText}
           placeholder="Сообщение водителю"
-          placeholderTextColor={L.dim}
+          placeholderTextColor={T.mist}
           style={[s.comment, { flex: 1, marginTop: 0 }]}
         />
-        <Pressable onPress={send} style={[s.orderBtn, { paddingHorizontal: 18, marginTop: 0 }]} disabled={sending}>
+        <Pressable onPress={send} style={[s.cta, { paddingHorizontal: 18, marginTop: 0, height: 48 }]} disabled={sending}>
           {sending
-            ? <ActivityIndicator color={L.actText} />
-            : <Text style={s.orderBtnText}>→</Text>
+            ? <ActivityIndicator color={T.ink} />
+            : <Icon name="send" size={18} color={T.ink} />
           }
         </Pressable>
       </View>
@@ -736,7 +719,7 @@ function FeedbackSection({ order }) {
     try { await api.submitFeedback(order.public_id, n); setSent(true); }
     catch (e) { Alert.alert("Ошибка", e.message); }
   };
-  if (sent) return <Text style={{ color: L.success, marginTop: 16, textAlign: "center", fontWeight: "700" }}>Спасибо за оценку!</Text>;
+  if (sent) return <Text style={{ color: T.ok, marginTop: 16, textAlign: "center", fontWeight: "600" }}>Спасибо за оценку!</Text>;
   return (
     <View style={{ marginTop: 16 }}>
       <Text style={s.sectionTitle}>Оцените поездку</Text>
@@ -747,7 +730,7 @@ function FeedbackSection({ order }) {
             onPress={() => submit(n)}
             style={[s.starBtn, rating >= n && s.starBtnActive]}
           >
-            <Text style={{ color: rating >= n ? L.actText : L.muted, fontSize: 22 }}>★</Text>
+            <Text style={{ color: rating >= n ? T.ink : T.stone, fontSize: 22 }}>★</Text>
           </Pressable>
         ))}
       </View>
@@ -760,12 +743,12 @@ function HistoryTab({ items }) {
     <ScrollView contentContainerStyle={s.sheetInner} showsVerticalScrollIndicator={false}>
       <Text style={s.sectionTitle}>История поездок</Text>
       {items.length === 0
-        ? <Text style={{ color: L.muted, fontSize: 14 }}>Ваши поездки появятся здесь.</Text>
+        ? <Text style={{ color: T.graphite, fontSize: 14 }}>Ваши поездки появятся здесь.</Text>
         : items.map((item) => (
           <View key={item.public_id} style={s.infoCard}>
             <Text style={s.infoTitle}>{item.pickup_address} → {item.dropoff_address}</Text>
             <Text style={s.infoLine}>
-              {item.public_id} · {formatMoney(item.fare_total)} · {humanStatus(item.status)}
+              <Text style={s.mono}>{item.public_id}</Text> · <Text style={s.mono}>{formatMoney(item.fare_total)}</Text> · {humanStatus(item.status)}
             </Text>
           </View>
         ))}
@@ -773,295 +756,241 @@ function HistoryTab({ items }) {
   );
 }
 
-/* ─── Стили ─── */
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#EDEAE4" },
+  root: { flex: 1, backgroundColor: T.mapBg },
 
-  /* ── Верхняя строка над картой ── */
-  mapTopRow: {
+  // Top bar (Yandex Go: menu | search-pill | avatar)
+  topRow: {
     position: "absolute", top: 0, left: 0, right: 0,
     flexDirection: "row", alignItems: "center",
-    paddingHorizontal: 14, paddingTop: 6,
+    paddingHorizontal: 16, paddingTop: 8, gap: 8,
     zIndex: 20,
-    gap: 8,
   },
-  mapIconBtn: {
-    width: 44, height: 44,
-    backgroundColor: "rgba(255,255,255,0.94)",
-    borderRadius: 14, alignItems: "center", justifyContent: "center",
-    shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12, shadowRadius: 6, elevation: 4,
+  iconChip: {
+    width: 44, height: 44, borderRadius: radii.r3,
+    backgroundColor: T.white, alignItems: "center", justifyContent: "center",
   },
-  mapIconText: { fontSize: 18, color: "#1A1A1A" },
+  searchPill: {
+    flex: 1, height: 44, borderRadius: radii.r3,
+    backgroundColor: T.white, flexDirection: "row", alignItems: "center",
+    paddingHorizontal: 14, gap: 10,
+  },
+  searchPillText: { fontFamily: fonts.ui, fontSize: 15, color: T.ink, fontWeight: "500" },
+  avatarChip: {
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: T.ink, alignItems: "center", justifyContent: "center",
+  },
+  avatarText: { fontFamily: fonts.ui, fontSize: 13, color: T.paper, fontWeight: "600" },
 
+  // WS pill
+  wsWrap: {
+    position: "absolute", top: 60, left: 0, right: 0,
+    alignItems: "center", zIndex: 18,
+  },
   wsPill: {
-    flex: 1,
     flexDirection: "row", alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: T.white, borderRadius: 14,
+    paddingHorizontal: 12, paddingVertical: 6, gap: 6,
+    ...shadows.s1,
   },
-  wsDot:  { width: 7, height: 7, borderRadius: 3.5, marginRight: 5 },
-  wsText: {
-    color: "rgba(30,30,30,0.7)", fontSize: 11, fontWeight: "600",
-    backgroundColor: "rgba(255,255,255,0.80)",
-    paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10,
+  wsDot: { width: 7, height: 7, borderRadius: 3.5 },
+  wsText: { fontFamily: fonts.ui, fontSize: 12, color: T.graphite, fontWeight: "500" },
+
+  // My-location FAB
+  locFab: {
+    position: "absolute", right: 16, bottom: SHEET_EXPANDED_H + 16,
+    width: 44, height: 44, borderRadius: radii.r3,
+    backgroundColor: T.white, alignItems: "center", justifyContent: "center",
+    zIndex: 18,
   },
 
-  bonusBtn: {
-    backgroundColor: "rgba(255,255,255,0.94)",
-    borderRadius: 20, paddingHorizontal: 14, paddingVertical: 9,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12, shadowRadius: 6, elevation: 4,
-  },
-  bonusBtnText: { color: "#1A1A1A", fontSize: 13, fontWeight: "700" },
-
-  /* ── Плашка адреса ── */
-  addrBarOuter: {
-    position: "absolute", top: 56, left: 0, right: 0,
-    alignItems: "center", zIndex: 15,
-  },
-  addrBar: {
-    marginTop: 8, backgroundColor: "rgba(255,255,255,0.94)",
-    paddingHorizontal: 20, paddingVertical: 10, borderRadius: 18,
-    alignItems: "center", minWidth: 200, maxWidth: "85%",
-    shadowColor: "#000", shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12, shadowRadius: 8, elevation: 6,
-  },
-  addrBarLabel: { color: "#888", fontSize: 11, fontWeight: "600", letterSpacing: 0.4 },
-  addrBarText:  { color: "#1A1A1A", fontSize: 14, fontWeight: "700", marginTop: 1, textAlign: "center" },
-
-  /* ── Пин ── */
+  // Pin overlay
   pinOverlay: {
     position: "absolute", left: 0, right: 0,
-    top: SCREEN_H * 0.30, alignItems: "center", zIndex: 10,
+    top: SCREEN_H * 0.32, alignItems: "center", zIndex: 10,
   },
 
-  /* ── Шторка ── */
+  // Sheet
   sheet: {
     position: "absolute", left: 0, right: 0,
-    backgroundColor: L.sheet,
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    zIndex: 20, overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.10, shadowRadius: 16, elevation: 16,
+    backgroundColor: T.paper2,
+    borderTopLeftRadius: radii.r5, borderTopRightRadius: radii.r5,
+    overflow: "hidden", zIndex: 20,
   },
   handleWrap: { alignItems: "center", paddingVertical: 10 },
-  handle: {
-    width: 36, height: 4, borderRadius: 2,
-    backgroundColor: L.dim, alignSelf: "center",
-  },
-  sheetInner: { paddingHorizontal: 16, paddingBottom: 20, paddingTop: 2 },
+  handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: T.mist },
+  sheetInner: { paddingHorizontal: 16, paddingBottom: 24, paddingTop: 4 },
 
-  /* ── Адресная секция (Yandex Go стиль) ── */
-  addrSection: {
-    backgroundColor: L.bg, borderRadius: 18,
-    paddingHorizontal: 14, paddingVertical: 6,
+  // Address card
+  addrCard: {
+    backgroundColor: T.paper, borderRadius: radii.r3,
+    paddingHorizontal: 14, paddingVertical: 10,
     marginBottom: 14,
-    borderWidth: 1, borderColor: L.border,
   },
-  addrRow: {
-    flexDirection: "row", alignItems: "center",
-    minHeight: 52,
-  },
+  addrRow: { flexDirection: "row", alignItems: "center", minHeight: 48 },
   dotCol: {
-    width: 20, alignItems: "center",
-    marginRight: 12,
-    alignSelf: "stretch",
-    justifyContent: "center",
+    width: 14, alignItems: "center", marginRight: 12,
+    alignSelf: "stretch", justifyContent: "center",
   },
-  dotA: {
-    width: 12, height: 12, borderRadius: 6,
-    backgroundColor: L.dotA,
-    borderWidth: 2, borderColor: "#1A1A1A",
-  },
-  dotLine: {
-    width: 2, height: 16,
-    backgroundColor: L.border,
-    marginVertical: 2, marginTop: 3,
-  },
-  dotB: {
-    width: 12, height: 12, borderRadius: 3,
-    backgroundColor: L.dotB,
-  },
-  addrFieldWrap: {
-    flex: 1,
-    paddingVertical: 6,
-    justifyContent: "center",
-  },
+  dotA: { width: 10, height: 10, borderRadius: 5, backgroundColor: T.sun },
+  dotLine: { position: "absolute", top: 28, width: 1, height: 14, backgroundColor: T.sand },
+  dotB: { width: 10, height: 10, borderRadius: 2, backgroundColor: T.ink },
+  addrField: { flex: 1, paddingVertical: 6 },
   addrLabel: {
-    fontSize: 11, color: L.muted,
-    fontWeight: "600", letterSpacing: 0.2,
-    marginBottom: 1,
+    fontFamily: fonts.ui, fontSize: 11, color: T.graphite,
+    fontWeight: "600", letterSpacing: 0.6, marginBottom: 2,
   },
-  addrValue: {
-    fontSize: 15, color: L.text, fontWeight: "500",
+  addrValue: { fontFamily: fonts.ui, fontSize: 15, color: T.ink, fontWeight: "500" },
+  addrPlaceholder: { color: T.stone },
+  addrDashedDivider: {
+    borderBottomWidth: 1, borderBottomColor: T.sand, borderStyle: "dashed",
+    marginLeft: 26, marginRight: -14,
   },
-  addrPlaceholder: { color: L.dim },
-  addrDivider: {
-    height: 1, backgroundColor: L.border,
-    marginLeft: 32, marginRight: -14,
-    marginBottom: 0,
+  addrPlus: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: T.white, alignItems: "center", justifyContent: "center",
+    marginLeft: 8, borderWidth: 1, borderColor: T.sand,
   },
-  addrRightBtn: {
-    marginLeft: 8,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 10, borderWidth: 1, borderColor: L.border,
-    paddingHorizontal: 10, paddingVertical: 7,
-  },
-  addrRightBtnText: { color: L.muted, fontSize: 12, fontWeight: "600" },
-  addrPlusBtn: {
-    marginLeft: 8,
-    width: 32, height: 32,
-    backgroundColor: L.accent, borderRadius: 16,
-    alignItems: "center", justifyContent: "center",
-  },
-  addrPlusBtnText: { color: "#1A1A1A", fontSize: 18, fontWeight: "700", lineHeight: 22 },
 
-  /* ── Быстрые места: 2×2 ── */
-  quickGrid: {
-    flexDirection: "row", flexWrap: "wrap",
-    gap: 10, marginBottom: 14,
-  },
-  quickCard: {
-    width: (SCREEN_W - 32 - 10) / 2 - 2,
-    backgroundColor: L.bg,
-    borderRadius: 16, borderWidth: 1, borderColor: L.border,
-    paddingHorizontal: 14, paddingVertical: 13,
-    flexDirection: "column",
-  },
-  quickCardIcon:  { fontSize: 22, marginBottom: 5 },
-  quickCardLabel: { color: L.text, fontSize: 14, fontWeight: "700" },
-  quickCardHint:  { color: L.muted, fontSize: 12, marginTop: 2 },
-
-  /* Маршрут: инфо */
-  routeInfo: {
-    backgroundColor: "#FFF9E0", borderRadius: 12,
-    paddingVertical: 8, paddingHorizontal: 14,
-    marginBottom: 12, alignItems: "center",
-    borderWidth: 1, borderColor: "#F0E080",
-  },
-  routeInfoText: { color: "#7A6400", fontSize: 13, fontWeight: "700" },
-
-  /* ── Тарифы ── */
-  tariffHeader: {
+  // Chips
+  chipsRow: { gap: 8, paddingVertical: 4 },
+  chip: {
     flexDirection: "row", alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 10,
+    height: 36, paddingHorizontal: 14,
+    backgroundColor: T.paper, borderRadius: radii.r2,
+    borderWidth: 1, borderColor: T.sand,
   },
-  tariffHeaderTitle: { color: L.text, fontSize: 17, fontWeight: "700" },
-  tariffHeaderLink:  { color: L.muted, fontSize: 13, fontWeight: "500" },
+  chipText: { fontFamily: fonts.ui, fontSize: 13, color: T.ink, fontWeight: "500" },
 
-  tariffRow: { paddingHorizontal: 2, paddingVertical: 4, gap: 10 },
+  // Recent
+  recentHeader: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    marginTop: 18, marginBottom: 6,
+  },
+  recentLabel: {
+    fontFamily: fonts.ui, fontSize: 11, color: T.graphite,
+    fontWeight: "600", letterSpacing: 0.6,
+  },
+  recentLink: { fontFamily: fonts.ui, fontSize: 11, color: T.graphite, letterSpacing: 0.6, fontWeight: "600" },
+  recentRow: {
+    flexDirection: "row", alignItems: "center",
+    paddingVertical: 12, gap: 12,
+  },
+  recentRowSep: { borderBottomWidth: 1, borderBottomColor: T.sand },
+  recentIconBox: {
+    width: 32, height: 32, borderRadius: radii.r1,
+    backgroundColor: T.paper, alignItems: "center", justifyContent: "center",
+  },
+  recentText: { flex: 1, fontFamily: fonts.ui, fontSize: 14, color: T.ink },
+
+  // Route chip
+  routeChip: {
+    alignSelf: "flex-start",
+    marginTop: 14, paddingHorizontal: 12, paddingVertical: 6,
+    backgroundColor: T.sunSoft, borderRadius: radii.r1,
+  },
+  routeChipText: { fontFamily: fonts.mono, fontSize: 12, color: T.sunDeep, fontWeight: "500" },
+
+  // Tariffs
+  tariffHeader: { marginTop: 18, marginBottom: 8 },
+  sectionTitle: {
+    fontFamily: fonts.display, fontSize: 17, fontWeight: "600", color: T.ink,
+  },
+  tariffRow: { gap: 10, paddingVertical: 4 },
   tariffCard: {
-    width: 100, borderRadius: 18,
-    backgroundColor: L.bg,
-    borderWidth: 2, borderColor: L.border,
-    alignItems: "center",
-    paddingVertical: 12, paddingHorizontal: 8,
+    width: 124, height: 148, borderRadius: radii.r3,
+    backgroundColor: T.paper2, borderWidth: 1, borderColor: T.sand,
+    paddingHorizontal: 12, paddingVertical: 14,
+    alignItems: "flex-start", justifyContent: "space-between",
   },
-  tariffCardSelected: { borderColor: L.accent, backgroundColor: "#FFFDE7" },
-  tariffIcon:  { fontSize: 26, marginBottom: 2 },
-  tariffLabel: { color: L.muted, fontWeight: "600", fontSize: 12, marginTop: 3 },
-  tariffLabelSel: { color: "#1A1A1A" },
-  tariffPrice: { color: L.muted, fontSize: 12, marginTop: 2, fontWeight: "500" },
-  tariffPriceSel: { color: "#7A6400", fontWeight: "700" },
-  tariffActiveDot: {
-    width: 6, height: 6, borderRadius: 3,
-    backgroundColor: L.accent, marginTop: 5,
+  tariffCardSel: { borderWidth: 2, borderColor: T.ink },
+  tariffLabel: {
+    fontFamily: fonts.ui, fontSize: 15, fontWeight: "600", color: T.graphite, marginTop: 4,
   },
+  tariffPrice: { fontFamily: fonts.mono, fontSize: 22, fontWeight: "600", color: T.graphite },
+  tariffEta:   { fontFamily: fonts.mono, fontSize: 12, fontWeight: "500", color: T.graphite },
 
-  /* Комментарий */
+  // Comment
   comment: {
-    backgroundColor: L.bg, color: L.text,
-    borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12,
-    fontSize: 14, marginBottom: 10,
-    borderWidth: 1, borderColor: L.border,
+    backgroundColor: T.white, color: T.ink,
+    borderRadius: radii.r2, paddingHorizontal: 14, paddingVertical: 12,
+    fontSize: 14, marginTop: 14, marginBottom: 14,
+    borderWidth: 1, borderColor: T.sand,
+    fontFamily: fonts.ui,
   },
 
-  /* Кнопка заказа */
-  orderBtn: {
-    backgroundColor: L.accent, borderRadius: 18,
-    paddingVertical: 17, alignItems: "center",
-    shadowColor: "#C8A800",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.28, shadowRadius: 10, elevation: 6,
-    marginTop: 2,
+  // CTA
+  cta: {
+    height: 56, borderRadius: radii.r3,
+    backgroundColor: T.sun, alignItems: "center", justifyContent: "center",
   },
-  orderBtnDisabled: { backgroundColor: L.dim, shadowOpacity: 0 },
-  orderBtnInner: {
-    flexDirection: "row", alignItems: "center",
-    justifyContent: "center",
-    width: "100%", paddingHorizontal: 16,
-  },
-  orderBtnText: { color: L.actText, fontWeight: "800", fontSize: 17, flex: 1, textAlign: "center" },
-  orderBtnFilter: {
-    width: 34, height: 34,
-    backgroundColor: "rgba(0,0,0,0.10)", borderRadius: 10,
-    alignItems: "center", justifyContent: "center",
-  },
-  orderBtnFilterIcon: { color: "#1A1A1A", fontSize: 18, fontWeight: "700" },
-  statusTxt: { color: L.danger, marginTop: 10, fontSize: 13, textAlign: "center" },
+  ctaText: { fontFamily: fonts.ui, fontSize: 17, fontWeight: "600", color: T.ink },
+  statusTxt: { fontFamily: fonts.ui, color: T.bad, marginTop: 10, fontSize: 13, textAlign: "center" },
 
-  /* ── Поиск: оверлей ── */
+  // Search overlay
   sugPanel: {
     position: "absolute", top: 0, left: 0, right: 0,
-    backgroundColor: L.sheet,
+    backgroundColor: T.paper2,
     zIndex: 40,
   },
   searchBarFixed: {
     position: "absolute", left: 0, right: 0, height: 64,
-    backgroundColor: L.sheet,
+    backgroundColor: T.paper2,
     flexDirection: "row", alignItems: "center",
     paddingHorizontal: 12,
-    borderTopWidth: 1, borderTopColor: L.border,
+    borderTopWidth: 1, borderTopColor: T.sand,
     zIndex: 41,
   },
   searchBackBtn: {
-    width: 40, height: 40, backgroundColor: L.bg,
-    borderRadius: 12, alignItems: "center", justifyContent: "center", marginRight: 10,
+    width: 40, height: 40, borderRadius: radii.r2,
+    backgroundColor: T.paper,
+    alignItems: "center", justifyContent: "center",
+    marginRight: 10,
   },
-  searchBackText: { color: L.text, fontSize: 20, lineHeight: 24 },
   searchInput: {
-    flex: 1, backgroundColor: L.bg, color: L.text,
-    fontSize: 16, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12,
+    flex: 1, backgroundColor: T.paper, color: T.ink,
+    fontSize: 16, borderRadius: radii.r2, paddingHorizontal: 14, paddingVertical: 12,
+    fontFamily: fonts.ui,
   },
   searchClearBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center", marginLeft: 8 },
-  searchClearText: { color: L.muted, fontSize: 18 },
   sugRow: {
     flexDirection: "row", alignItems: "flex-start",
     paddingHorizontal: 16, paddingVertical: 14,
   },
-  sugRowSep: { borderBottomWidth: 1, borderBottomColor: L.border },
-  sugIcon:    { fontSize: 16, marginRight: 10, marginTop: 1 },
-  sugRowText: { flex: 1, color: L.text, fontSize: 15, lineHeight: 20 },
+  sugRowSep: { borderBottomWidth: 1, borderBottomColor: T.sand },
+  sugRowText: { flex: 1, fontFamily: fonts.ui, color: T.ink, fontSize: 15, lineHeight: 20 },
   sugHint: {
-    color: L.muted, fontSize: 14, textAlign: "center",
+    fontFamily: fonts.ui, color: T.graphite, fontSize: 14, textAlign: "center",
     marginTop: 40, paddingHorizontal: 24, lineHeight: 20,
   },
 
-  /* ── Ride Tab ── */
+  // Ride tab
   infoCard: {
-    backgroundColor: L.bg, borderRadius: 14,
+    backgroundColor: T.paper, borderRadius: radii.r3,
     padding: 14, marginBottom: 10,
-    borderWidth: 1, borderColor: L.border,
+    borderWidth: 1, borderColor: T.sand,
   },
-  infoTitle: { color: L.text, fontWeight: "700", fontSize: 16, marginBottom: 6 },
-  infoLine:  { color: L.muted, fontSize: 13, marginTop: 2 },
+  infoTitle: {
+    fontFamily: fonts.display, color: T.ink, fontWeight: "600", fontSize: 16, marginBottom: 6,
+  },
+  infoLine: { fontFamily: fonts.ui, color: T.graphite, fontSize: 13, marginTop: 2 },
+  mono: { fontFamily: fonts.mono },
+
   cancelBtn: {
-    borderWidth: 1.5, borderColor: L.danger, borderRadius: 14,
-    paddingVertical: 13, alignItems: "center", marginBottom: 6,
+    borderWidth: 1, borderColor: T.sand, borderRadius: radii.r3,
+    paddingVertical: 14, alignItems: "center", marginBottom: 6,
   },
-  cancelBtnText: { color: L.danger, fontSize: 15, fontWeight: "600" },
-  sectionTitle:  { color: L.text, fontWeight: "700", fontSize: 15, marginTop: 12, marginBottom: 8 },
+  cancelBtnText: { fontFamily: fonts.ui, color: T.bad, fontSize: 16, fontWeight: "500" },
+
   chatBox: {
-    backgroundColor: L.bg, borderRadius: 12,
+    backgroundColor: T.paper, borderRadius: radii.r2,
     padding: 10, minHeight: 80, maxHeight: 180,
-    borderWidth: 1, borderColor: L.border,
+    borderWidth: 1, borderColor: T.sand,
   },
   starBtn: {
-    width: 52, height: 46, borderRadius: 12,
-    backgroundColor: L.bg, borderWidth: 1, borderColor: L.border,
+    width: 52, height: 46, borderRadius: radii.r2,
+    backgroundColor: T.paper, borderWidth: 1, borderColor: T.sand,
     alignItems: "center", justifyContent: "center",
   },
-  starBtnActive: { backgroundColor: "#FFF9C4", borderColor: L.accent },
+  starBtnActive: { backgroundColor: T.sunSoft, borderColor: T.sun },
 });

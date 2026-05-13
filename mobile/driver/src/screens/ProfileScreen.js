@@ -1,39 +1,19 @@
+// ProfileScreen — спека §6.2.9.
+// Header: avatar 80, имя, рейтинг fontMono, "Активен с …".
+// Карточка авто, список пунктов (rows: иконка, label, шеврон).
 import React from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  StyleSheet,
-  Alert,
-} from "react-native";
+import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useStore } from "../state";
+import { T, fonts, radii } from "../theme";
+import { Icon } from "../components/Icon";
 
-const D = {
-  bg: "#0F121C",
-  card: "#1A1D2B",
-  cardAlt: "#22263A",
-  border: "#2E3347",
-  text: "#EFF2FA",
-  muted: "#8A92A8",
-  accent: "#F5CF31",
-  actText: "#11131B",
-  success: "#3CD48D",
-  danger: "#FF5A4D",
-};
-
-function MenuItem({ label, onPress }) {
-  return (
-    <Pressable
-      style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
-      onPress={onPress}
-    >
-      <Text style={styles.menuLabel}>{label}</Text>
-      <Text style={styles.menuChevron}>›</Text>
-    </Pressable>
-  );
-}
+const MENU = [
+  { id: "docs",     icon: "shield",   label: "Документы" },
+  { id: "safety",   icon: "warn",     label: "Безопасность" },
+  { id: "support",  icon: "chat",     label: "Поддержка" },
+  { id: "language", icon: "settings", label: "Язык" },
+];
 
 export default function ProfileScreen() {
   const profile = useStore((s) => s.profile);
@@ -48,190 +28,130 @@ export default function ProfileScreen() {
 
   if (!profile) {
     return (
-      <SafeAreaView style={styles.root}>
-        <View style={styles.loadingWrap}>
-          <Text style={styles.muted}>Загрузка профиля…</Text>
+      <SafeAreaView style={s.root}>
+        <View style={s.loading}>
+          <Text style={s.muted}>Загрузка профиля…</Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  const carLine = [
-    profile.vehicle_make,
-    profile.vehicle_model,
-    profile.vehicle_color,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const initial = (profile.full_name || "?")[0].toUpperCase();
+  const carLine = [profile.vehicle_make, profile.vehicle_model, profile.vehicle_color].filter(Boolean).join(" · ");
+  const since = profile.active_since || "янв 2024";
 
   return (
-    <SafeAreaView style={styles.root} edges={["top"]}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-
-        {/* Header card: rating + balance */}
-        <View style={styles.headerCard}>
-          <View style={styles.headerTop}>
-            <View style={styles.avatarCircle}>
-              <Text style={styles.avatarLetter}>
-                {(profile.full_name || "?")[0].toUpperCase()}
-              </Text>
-            </View>
-            <View style={styles.headerInfo}>
-              <Text style={styles.fullName}>{profile.full_name || "—"}</Text>
-              {carLine ? (
-                <Text style={styles.carLine}>{carLine}</Text>
-              ) : null}
-              {profile.vehicle_plate ? (
-                <View style={styles.plateBadge}>
-                  <Text style={styles.plateText}>{profile.vehicle_plate}</Text>
-                </View>
-              ) : null}
-            </View>
+    <SafeAreaView style={s.root} edges={["top"]}>
+      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={s.header}>
+          <View style={s.avatar}>
+            <Text style={s.avatarLetter}>{initial}</Text>
           </View>
-
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>
-                ★ {profile.rating != null ? profile.rating : "—"}
-              </Text>
-              <Text style={styles.statLabel}>Рейтинг</Text>
-            </View>
-            <View style={styles.statSep} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>
-                {profile.balance != null ? `${profile.balance} ₽` : "—"}
-              </Text>
-              <Text style={styles.statLabel}>Баланс</Text>
-            </View>
-            <View style={styles.statSep} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>
-                {profile.level != null ? profile.level : "—"}
-              </Text>
-              <Text style={styles.statLabel}>Уровень</Text>
-            </View>
+          <Text style={s.name}>{profile.full_name || "—"}</Text>
+          <View style={s.ratingRow}>
+            <Icon name="star" size={14} color={T.sun} />
+            <Text style={s.rating}>{profile.rating != null ? profile.rating : "—"}</Text>
           </View>
+          <Text style={s.since}>Активен с {since}</Text>
         </View>
 
-        {/* Menu */}
-        <View style={styles.menuCard}>
-          <MenuItem label="Личные данные" onPress={() => {}} />
-          <View style={styles.menuDivider} />
-          <MenuItem label="Автомобиль" onPress={() => {}} />
-          <View style={styles.menuDivider} />
-          <MenuItem label="Документы" onPress={() => {}} />
-          <View style={styles.menuDivider} />
-          <MenuItem label="Настройки" onPress={() => {}} />
+        {/* Car card */}
+        <View style={s.card}>
+          <Text style={s.cardLabel}>АВТОМОБИЛЬ</Text>
+          {carLine ? <Text style={s.cardLine}>{carLine}</Text> : null}
+          {profile.vehicle_year ? <Text style={s.cardSubLine}>{profile.vehicle_year} год</Text> : null}
+          {profile.vehicle_plate ? (
+            <View style={s.plateBadge}>
+              <Text style={s.plateText}>{profile.vehicle_plate}</Text>
+            </View>
+          ) : null}
         </View>
 
-        {/* Logout */}
-        <Pressable
-          onPress={confirmLogout}
-          style={({ pressed }) => [styles.logoutBtn, pressed && { opacity: 0.7 }]}
-        >
-          <Text style={styles.logoutText}>Выйти</Text>
+        {/* Menu rows */}
+        <View style={s.menu}>
+          {MENU.map((m, i) => (
+            <Pressable
+              key={m.id}
+              style={({ pressed }) => [
+                s.menuRow,
+                i < MENU.length - 1 && s.menuRowSep,
+                pressed && { backgroundColor: T.ink2 },
+              ]}
+            >
+              <Icon name={m.icon} size={20} color={T.stone} />
+              <Text style={s.menuLabel}>{m.label}</Text>
+              <Icon name="arrow" size={16} color={T.stone} />
+            </Pressable>
+          ))}
+        </View>
+
+        {/* Logout row */}
+        <Pressable onPress={confirmLogout} style={s.logoutRow}>
+          <Icon name="back" size={20} color={T.bad} />
+          <Text style={s.logoutText}>Выйти</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: D.bg },
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: T.ink },
   scroll: { padding: 16, paddingBottom: 32 },
-  loadingWrap: { flex: 1, alignItems: "center", justifyContent: "center" },
-  muted: { color: D.muted, fontSize: 14 },
+  loading: { flex: 1, alignItems: "center", justifyContent: "center" },
+  muted: { fontFamily: fonts.ui, color: T.stone, fontSize: 14 },
 
-  // Header card
-  headerCard: {
-    backgroundColor: D.card,
-    borderRadius: 18,
-    padding: 18,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: D.border,
+  header: { alignItems: "center", paddingVertical: 24 },
+  avatar: {
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: T.ink2, alignItems: "center", justifyContent: "center",
+    marginBottom: 14, borderWidth: 1, borderColor: T.ink3,
   },
-  headerTop: {
-    flexDirection: "row",
-    alignItems: "flex-start",
+  avatarLetter: { fontFamily: fonts.display, fontSize: 32, fontWeight: "600", color: T.paper2 },
+  name: { fontFamily: fonts.display, fontSize: 22, fontWeight: "600", color: T.white },
+  ratingRow: {
+    flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6,
+  },
+  rating: { fontFamily: fonts.mono, fontSize: 14, fontWeight: "500", color: T.paper2 },
+  since: { fontFamily: fonts.ui, fontSize: 12, color: T.stone, marginTop: 4 },
+
+  card: {
+    backgroundColor: T.ink2, borderRadius: radii.r3,
+    padding: 16, marginBottom: 16,
+    borderWidth: 1, borderColor: T.ink3,
+  },
+  cardLabel: {
+    fontFamily: fonts.ui, fontSize: 11, color: T.stone,
+    fontWeight: "600", letterSpacing: 0.6, marginBottom: 6,
+  },
+  cardLine: { fontFamily: fonts.ui, fontSize: 15, fontWeight: "500", color: T.paper2 },
+  cardSubLine: { fontFamily: fonts.ui, fontSize: 13, color: T.mist, marginTop: 2 },
+  plateBadge: {
+    alignSelf: "flex-start", marginTop: 10,
+    paddingHorizontal: 12, paddingVertical: 6,
+    borderWidth: 1, borderColor: T.paper2, borderRadius: radii.r1,
+  },
+  plateText: { fontFamily: fonts.mono, fontSize: 14, fontWeight: "600", color: T.paper2, letterSpacing: 1 },
+
+  menu: {
+    backgroundColor: T.ink2, borderRadius: radii.r3,
+    overflow: "hidden",
+    borderWidth: 1, borderColor: T.ink3,
     marginBottom: 16,
   },
-  avatarCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: D.accent,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 14,
+  menuRow: {
+    flexDirection: "row", alignItems: "center", gap: 14,
+    paddingHorizontal: 16, height: 56,
   },
-  avatarLetter: {
-    color: D.actText,
-    fontSize: 26,
-    fontWeight: "800",
-  },
-  headerInfo: { flex: 1, justifyContent: "center" },
-  fullName: {
-    color: D.text,
-    fontSize: 20,
-    fontWeight: "800",
-    marginBottom: 4,
-  },
-  carLine: { color: D.muted, fontSize: 13, marginBottom: 6 },
-  plateBadge: {
-    alignSelf: "flex-start",
-    backgroundColor: D.cardAlt,
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderWidth: 1,
-    borderColor: D.border,
-  },
-  plateText: { color: D.text, fontSize: 13, fontWeight: "700", letterSpacing: 1 },
+  menuRowSep: { borderBottomWidth: 1, borderBottomColor: T.ink3 },
+  menuLabel: { flex: 1, fontFamily: fonts.ui, fontSize: 15, color: T.paper2 },
 
-  // Stats row inside header
-  statsRow: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderColor: D.border,
+  logoutRow: {
+    flexDirection: "row", alignItems: "center", gap: 14,
+    paddingHorizontal: 16, height: 56,
+    backgroundColor: T.ink2, borderRadius: radii.r3,
+    borderWidth: 1, borderColor: T.ink3,
   },
-  statItem: { alignItems: "center", flex: 1 },
-  statValue: { color: D.text, fontSize: 16, fontWeight: "800", marginBottom: 2 },
-  statLabel: { color: D.muted, fontSize: 11 },
-  statSep: { width: 1, height: 30, backgroundColor: D.border },
-
-  // Menu card
-  menuCard: {
-    backgroundColor: D.card,
-    borderRadius: 18,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: D.border,
-    overflow: "hidden",
-  },
-  menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-  },
-  menuItemPressed: { backgroundColor: D.cardAlt },
-  menuLabel: { color: D.text, fontSize: 15, fontWeight: "500" },
-  menuChevron: { color: D.muted, fontSize: 22, fontWeight: "300", marginTop: -2 },
-  menuDivider: { height: 1, backgroundColor: D.border, marginHorizontal: 18 },
-
-  // Logout
-  logoutBtn: {
-    backgroundColor: D.card,
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: D.border,
-  },
-  logoutText: { color: D.danger, fontWeight: "700", fontSize: 15 },
+  logoutText: { fontFamily: fonts.ui, fontSize: 15, color: T.bad, fontWeight: "500" },
 });

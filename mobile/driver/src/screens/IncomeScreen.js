@@ -1,267 +1,156 @@
+// IncomeScreen / Stats — спека §6.2.7.
+// Hero "Заработано сегодня", сегмент-control День/Неделя/Месяц, KPI 2×2, "Последние поездки".
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  StyleSheet,
-  Dimensions,
-} from "react-native";
+import { View, Text, ScrollView, Pressable, StyleSheet, Dimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { T, fonts, radii } from "../theme";
+import { Icon } from "../components/Icon";
+import { useStore } from "../state";
 
 const SCREEN_W = Dimensions.get("window").width;
 
-const D = {
-  bg: "#0F121C",
-  card: "#1A1D2B",
-  cardAlt: "#22263A",
-  border: "#2E3347",
-  text: "#EFF2FA",
-  muted: "#8A92A8",
-  accent: "#F5CF31",
-  actText: "#11131B",
-  success: "#3CD48D",
-  danger: "#FF5A4D",
-};
+const TABS = [
+  { id: "day",   label: "День" },
+  { id: "week",  label: "Неделя" },
+  { id: "month", label: "Месяц" },
+];
 
-const TABS = ["День", "Неделя", "Месяц"];
-
-// Mock data for each period
 const MOCK = {
-  День: {
-    total: "4 736 ₽",
-    orders: 12,
-    bars: [30, 55, 70, 45, 90, 60, 80, 50, 65, 40, 75, 85],
-    rows: [
-      { label: "За заказы", value: "4 200 ₽", sign: 1 },
-      { label: "Бонусы", value: "536 ₽", sign: 1 },
-      { label: "Комиссия сервиса", value: "-1 042 ₽", sign: -1 },
-    ],
-  },
-  Неделя: {
-    total: "28 540 ₽",
-    orders: 74,
-    bars: [60, 45, 80, 70, 90, 55, 75],
-    rows: [
-      { label: "За заказы", value: "25 200 ₽", sign: 1 },
-      { label: "Бонусы", value: "3 340 ₽", sign: 1 },
-      { label: "Комиссия сервиса", value: "-6 270 ₽", sign: -1 },
-    ],
-  },
-  Месяц: {
-    total: "112 800 ₽",
-    orders: 298,
-    bars: [60, 75, 50, 85, 70, 90, 65, 55, 80, 45, 75, 60, 70, 85, 50, 65, 90, 40, 75, 80, 55, 70, 60, 85, 50, 65, 45, 80, 70, 55],
-    rows: [
-      { label: "За заказы", value: "99 600 ₽", sign: 1 },
-      { label: "Бонусы", value: "13 200 ₽", sign: 1 },
-      { label: "Комиссия сервиса", value: "-24 816 ₽", sign: -1 },
-    ],
-  },
+  day:   { earnings: 3240, rides: 12, hours: 6.4, rating: 4.92, km: 78 },
+  week:  { earnings: 28540, rides: 74, hours: 38, rating: 4.91, km: 512 },
+  month: { earnings: 112800, rides: 312, hours: 168, rating: 4.89, km: 2104 },
 };
 
-// Simple bar chart using Views
-function BarChart({ bars }) {
-  const maxVal = Math.max(...bars);
-  const barW = Math.max(
-    8,
-    Math.floor((SCREEN_W - 64) / bars.length) - 4
-  );
-  const chartH = 80;
-
-  return (
-    <View style={chartStyles.wrap}>
-      {bars.map((v, i) => {
-        const h = Math.round((v / maxVal) * chartH);
-        return (
-          <View key={i} style={[chartStyles.barWrap, { width: barW }]}>
-            <View
-              style={[
-                chartStyles.bar,
-                { height: h, backgroundColor: D.accent, borderRadius: 4 },
-              ]}
-            />
-          </View>
-        );
-      })}
-    </View>
-  );
+function formatMoney(v) {
+  return `${Math.round(Number(v || 0)).toLocaleString("ru-RU").replace(",", " ")} ₽`;
 }
 
-const chartStyles = StyleSheet.create({
-  wrap: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    height: 80,
-    gap: 4,
-  },
-  barWrap: { alignItems: "center", justifyContent: "flex-end" },
-  bar: { width: "100%" },
-});
-
 export default function IncomeScreen() {
-  const [tab, setTab] = useState("День");
+  const [tab, setTab] = useState("day");
   const data = MOCK[tab];
 
+  const profile = useStore((s) => s.profile);
+
   return (
-    <SafeAreaView style={styles.root} edges={["top"]}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={s.root} edges={["top"]}>
+      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+        <Text style={s.h1}>Статистика</Text>
 
-        {/* Title */}
-        <Text style={styles.title}>Доход</Text>
-
-        {/* Tab selector */}
-        <View style={styles.tabRow}>
+        {/* Segment control */}
+        <View style={s.segWrap}>
           {TABS.map((t) => (
             <Pressable
-              key={t}
-              style={[styles.tab, tab === t && styles.tabActive]}
-              onPress={() => setTab(t)}
+              key={t.id}
+              style={[s.segItem, tab === t.id && s.segItemActive]}
+              onPress={() => setTab(t.id)}
             >
-              <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
-                {t}
-              </Text>
+              <Text style={[s.segText, tab === t.id && s.segTextActive]}>{t.label}</Text>
             </Pressable>
           ))}
         </View>
 
-        {/* Today's earnings */}
-        <View style={styles.earningsCard}>
-          <Text style={styles.earningsAmount}>{data.total}</Text>
-          <Text style={styles.earningsOrders}>{data.orders} заказов</Text>
+        {/* Hero earnings */}
+        <View style={s.hero}>
+          <Text style={s.heroLabel}>
+            ЗАРАБОТАНО {tab === "day" ? "СЕГОДНЯ" : tab === "week" ? "ЗА НЕДЕЛЮ" : "ЗА МЕСЯЦ"}
+          </Text>
+          <Text style={s.heroValue}>{formatMoney(data.earnings)}</Text>
+        </View>
 
-          {/* Bar chart */}
-          <View style={styles.chartWrap}>
-            <BarChart bars={data.bars} />
+        {/* KPI grid 2×2 */}
+        <View style={s.grid}>
+          <KPI label="Поездок" value={String(data.rides)} />
+          <KPI label="Часов онлайн" value={data.hours.toString()} />
+          <KPI label="Средний рейтинг" value={String(data.rating)} icon="star" />
+          <KPI label="Км пройдено" value={data.km.toLocaleString("ru-RU").replace(",", " ")} />
+        </View>
+
+        {/* Recent rides */}
+        <Text style={s.section}>Последние поездки</Text>
+        {[
+          { time: "14:32", addr: "пр. Нахимова → Малахов курган", price: 340 },
+          { time: "13:08", addr: "Графская → Северная", price: 220 },
+          { time: "11:42", addr: "Аквамарин → ТЦ Муссон", price: 410 },
+          { time: "10:15", addr: "Балаклава → Центр", price: 680 },
+        ].map((r, i, arr) => (
+          <View key={i} style={[s.rideRow, i < arr.length - 1 && s.rideRowSep]}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.rideTime}>{r.time}</Text>
+              <Text style={s.rideAddr} numberOfLines={1}>{r.addr}</Text>
+            </View>
+            <Text style={s.ridePrice}>{formatMoney(r.price)}</Text>
           </View>
-        </View>
-
-        {/* Summary rows */}
-        <View style={styles.summaryCard}>
-          <Text style={styles.sectionLabel}>Итого</Text>
-          {data.rows.map((row, i) => (
-            <React.Fragment key={i}>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>{row.label}</Text>
-                <Text
-                  style={[
-                    styles.summaryValue,
-                    row.sign < 0 && styles.summaryNeg,
-                  ]}
-                >
-                  {row.value}
-                </Text>
-              </View>
-              {i < data.rows.length - 1 && (
-                <View style={styles.summaryDivider} />
-              )}
-            </React.Fragment>
-          ))}
-        </View>
-
-        {/* Подробнее button */}
-        <Pressable
-          style={({ pressed }) => [styles.detailBtn, pressed && { opacity: 0.7 }]}
-        >
-          <Text style={styles.detailBtnText}>Подробнее</Text>
-        </Pressable>
+        ))}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: D.bg },
-  scroll: { padding: 16, paddingBottom: 32 },
+function KPI({ label, value, icon }) {
+  return (
+    <View style={s.kpi}>
+      <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
+        {icon && <Icon name={icon} size={16} color={T.sun} />}
+        <Text style={s.kpiValue}>{value}</Text>
+      </View>
+      <Text style={s.kpiLabel}>{label}</Text>
+    </View>
+  );
+}
 
-  title: {
-    color: D.text,
-    fontSize: 26,
-    fontWeight: "800",
-    marginBottom: 16,
-  },
+const CELL_W = (SCREEN_W - 16 * 2 - 12) / 2;
 
-  // Tabs
-  tabRow: {
-    flexDirection: "row",
-    backgroundColor: D.card,
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: D.border,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 8,
-    alignItems: "center",
-    borderRadius: 9,
-  },
-  tabActive: { backgroundColor: D.accent },
-  tabText: { color: D.muted, fontSize: 13, fontWeight: "600" },
-  tabTextActive: { color: D.actText, fontWeight: "800" },
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: T.ink },
+  content: { paddingHorizontal: 16, paddingBottom: 32 },
 
-  // Earnings card
-  earningsCard: {
-    backgroundColor: D.card,
-    borderRadius: 18,
-    padding: 20,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: D.border,
-  },
-  earningsAmount: {
-    color: D.text,
-    fontSize: 36,
-    fontWeight: "800",
-    marginBottom: 4,
-  },
-  earningsOrders: {
-    color: D.muted,
-    fontSize: 13,
-    fontWeight: "500",
-    marginBottom: 20,
-  },
-  chartWrap: {
-    paddingTop: 8,
+  h1: {
+    fontFamily: fonts.display, fontSize: 28, fontWeight: "600",
+    color: T.white, marginTop: 8, marginBottom: 16,
   },
 
-  // Summary card
-  summaryCard: {
-    backgroundColor: D.card,
-    borderRadius: 18,
-    padding: 18,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: D.border,
+  segWrap: {
+    flexDirection: "row", backgroundColor: T.ink2, borderRadius: radii.r3,
+    padding: 4, gap: 4, marginBottom: 20,
   },
-  sectionLabel: {
-    color: D.muted,
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
-    marginBottom: 12,
+  segItem: {
+    flex: 1, height: 36, borderRadius: radii.r2,
+    alignItems: "center", justifyContent: "center",
   },
-  summaryRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 10,
-  },
-  summaryLabel: { color: D.text, fontSize: 14 },
-  summaryValue: { color: D.text, fontSize: 14, fontWeight: "700" },
-  summaryNeg: { color: D.danger },
-  summaryDivider: { height: 1, backgroundColor: D.border },
+  segItemActive: { backgroundColor: T.ink3 },
+  segText: { fontFamily: fonts.ui, fontSize: 13, color: T.mist, fontWeight: "500" },
+  segTextActive: { color: T.paper2 },
 
-  // Detail button
-  detailBtn: {
-    backgroundColor: D.card,
-    borderRadius: 14,
-    paddingVertical: 15,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: D.border,
+  hero: { marginBottom: 24 },
+  heroLabel: {
+    fontFamily: fonts.ui, fontSize: 11, color: T.stone,
+    fontWeight: "600", letterSpacing: 0.6, marginBottom: 6,
   },
-  detailBtnText: { color: D.accent, fontSize: 15, fontWeight: "700" },
+  heroValue: {
+    fontFamily: fonts.mono, fontSize: 48, fontWeight: "700", color: T.sun,
+    letterSpacing: -0.5,
+  },
+
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 24 },
+  kpi: {
+    width: CELL_W, padding: 16,
+    backgroundColor: T.ink2, borderRadius: radii.r3,
+    borderWidth: 1, borderColor: T.ink3,
+  },
+  kpiValue: { fontFamily: fonts.mono, fontSize: 24, fontWeight: "600", color: T.white },
+  kpiLabel: {
+    fontFamily: fonts.ui, fontSize: 12, color: T.stone,
+    fontWeight: "500", marginTop: 6,
+  },
+
+  section: {
+    fontFamily: fonts.display, fontSize: 17, fontWeight: "600",
+    color: T.white, marginBottom: 8,
+  },
+
+  rideRow: { flexDirection: "row", alignItems: "center", paddingVertical: 14, gap: 12 },
+  rideRowSep: { borderBottomWidth: 1, borderBottomColor: T.ink3 },
+  rideTime: { fontFamily: fonts.mono, fontSize: 12, color: T.stone, fontWeight: "500" },
+  rideAddr: { fontFamily: fonts.ui, fontSize: 14, color: T.paper2, marginTop: 2 },
+  ridePrice: { fontFamily: fonts.mono, fontSize: 15, fontWeight: "600", color: T.white },
 });

@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design tokens — все цвета здесь, чтобы менять в одном месте.
+   Tailwind config мапит их на классы (bg-ink, text-sun и т.д.). */
+:root {
+  --c-ink:           #0E0E0C;
+  --c-ink2:          #1A1A17;
+  --c-ink3:          #2A2A26;
+  --c-graphite:      #5C5A55;
+  --c-stone:         #8A8780;
+  --c-mist:          #B8B5AD;
+  --c-sand:          #E6E2D8;
+  --c-paper:         #F4F1EA;
+  --c-paper2:        #FBF9F4;
+  --c-white:         #FFFFFF;
+
+  --c-sun:           #F2A65A;
+  --c-sun-deep:      #D9823A;
+  --c-sun-soft:      rgba(242, 166, 90, 0.14);
+
+  --c-ok:            #3D8A6A;
+  --c-warn:          #C49A2C;
+  --c-bad:           #B0463A;
+  --c-link:          #3F6BB0;
+
+  --c-map-bg:        #EFEBE2;
+  --c-map-water:     #D9DCE0;
+  --c-map-road:      #FFFFFF;
+  --c-map-road-alt:  #E8E4DA;
+  --c-map-ink:       #1A1A17;
+}
+
+html, body { height: 100%; }
+
+body {
+  background: var(--c-paper);
+  color: var(--c-ink);
+  font-family: "Inter", "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+  font-feature-settings: "ss01", "cv02", "cv11";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Все цифры — табличные моноширинные (правило §5.3 спеки) */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-family: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, monospace;
+}
+
+/* Hairline borders — 1px sand на светлой / ink3 на тёмной */
+.hairline-b {
+  border-bottom: 1px solid var(--c-sand);
+}
+.hairline-r {
+  border-right: 1px solid var(--c-sand);
+}
+
+/* Scrollbar в стиле */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--c-mist); border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: var(--c-stone); }
+::-webkit-scrollbar-track { background: transparent; }
