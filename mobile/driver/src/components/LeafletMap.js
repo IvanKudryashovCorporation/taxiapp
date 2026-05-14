@@ -53,6 +53,7 @@ function buildHTML(centerLat, centerLon) {
   ];
 
   function initMap() {
+    initCarOverlayClass();
     map = new google.maps.Map(document.getElementById('map'), {
       center: { lat: ${centerLat}, lng: ${centerLon} },
       zoom: 15,
@@ -79,38 +80,44 @@ function buildHTML(centerLat, centerLon) {
   }
 
   var carOverlay = null;
+  var CarOverlayClass = null;
 
-  function CarOverlay() {
-    this.latLng = null;
-    this.deg = 0;
+  function initCarOverlayClass() {
+    // Вызывается ПОСЛЕ загрузки Maps API (внутри initMap), когда google.maps уже доступен
+    function CarOverlay() {
+      this.latLng = null;
+      this.deg = 0;
+    }
+    CarOverlay.prototype = Object.create(google.maps.OverlayView.prototype);
+    CarOverlay.prototype.constructor = CarOverlay;
+    CarOverlay.prototype.onAdd = function() {
+      var div = document.createElement('div');
+      div.style.cssText = 'position:absolute;width:80px;height:80px;margin-left:-40px;margin-top:-40px;pointer-events:none;';
+      var img = document.createElement('img');
+      img.src = CAR_IMG_SRC;
+      img.style.cssText = 'width:44px;height:51px;position:absolute;left:18px;top:14.5px;filter:drop-shadow(0px 2px 4px rgba(0,0,0,0.55));transform-origin:22px 25.5px;transition:transform 0.3s linear;';
+      div.appendChild(img);
+      this._div = div;
+      this._img = img;
+      this.getPanes().overlayLayer.appendChild(div);
+    };
+    CarOverlay.prototype.draw = function() {
+      if (!this.latLng || !this._div) return;
+      var p = this.getProjection().fromLatLngToDivPixel(this.latLng);
+      this._div.style.left = Math.round(p.x) + 'px';
+      this._div.style.top  = Math.round(p.y) + 'px';
+    };
+    CarOverlay.prototype.onRemove = function() {
+      if (this._div && this._div.parentNode) this._div.parentNode.removeChild(this._div);
+      this._div = null;
+    };
+    CarOverlay.prototype.setPositionAndAngle = function(lat, lon, deg) {
+      this.latLng = new google.maps.LatLng(lat, lon);
+      if (this._img) this._img.style.transform = 'rotate(' + deg + 'deg)';
+      this.draw();
+    };
+    CarOverlayClass = CarOverlay;
   }
-  CarOverlay.prototype = new google.maps.OverlayView();
-  CarOverlay.prototype.onAdd = function() {
-    var div = document.createElement('div');
-    div.style.cssText = 'position:absolute;width:80px;height:80px;margin-left:-40px;margin-top:-40px;pointer-events:none;';
-    var img = document.createElement('img');
-    img.src = CAR_IMG_SRC;
-    img.style.cssText = 'width:44px;height:51px;position:absolute;left:18px;top:14.5px;filter:drop-shadow(0px 2px 4px rgba(0,0,0,0.55));transform-origin:22px 25.5px;transition:transform 0.3s linear;';
-    div.appendChild(img);
-    this._div = div;
-    this._img = img;
-    this.getPanes().overlayLayer.appendChild(div);
-  };
-  CarOverlay.prototype.draw = function() {
-    if (!this.latLng || !this._div) return;
-    var p = this.getProjection().fromLatLngToDivPixel(this.latLng);
-    this._div.style.left = Math.round(p.x) + 'px';
-    this._div.style.top  = Math.round(p.y) + 'px';
-  };
-  CarOverlay.prototype.onRemove = function() {
-    if (this._div && this._div.parentNode) this._div.parentNode.removeChild(this._div);
-    this._div = null;
-  };
-  CarOverlay.prototype.setPositionAndAngle = function(lat, lon, deg) {
-    this.latLng = new google.maps.LatLng(lat, lon);
-    if (this._img) this._img.style.transform = 'rotate(' + deg + 'deg)';
-    this.draw();
-  };
 
   function setCarPosition(lat, lon, compassHeading) {
     var target = (compassHeading !== null && compassHeading !== undefined && compassHeading >= 0) ? compassHeading : prevDeg;
@@ -118,7 +125,7 @@ function buildHTML(centerLat, centerLon) {
     var smooth = prevDeg + diff;
     prevDeg = smooth;
     if (!carOverlay) {
-      carOverlay = new CarOverlay();
+      carOverlay = new CarOverlayClass();
       carOverlay.setMap(map);
     }
     carOverlay.setPositionAndAngle(lat, lon, smooth);

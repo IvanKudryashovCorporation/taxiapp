@@ -45,7 +45,7 @@ const LoggedInStack = createNativeStackNavigator();
 function LoggedInScreens() {
   return (
     <LoggedInStack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
-      <LoggedInStack.Screen name="Main" component={MainTabs} />
+      <LoggedInStack.Screen name="Tabs" component={MainTabs} />
       <LoggedInStack.Screen name="SupportChat" component={SupportChatScreen} />
     </LoggedInStack.Navigator>
   );
