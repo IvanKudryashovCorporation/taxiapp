@@ -107,18 +107,32 @@ export const spacing = (n) => n * 4;
 
 // ─── Light / Dark themes ─────────────────────────────────────────
 export const T_LIGHT = {
+  // Semantic aliases
   bg: "#F4F1EA", surface: "#FFFFFF", surface2: "#FBF9F4",
   border: "#E6E2D8", text: "#0E0E0C", textSub: "#5C5A55",
   textDim: "#8A8780", textHint: "#B8B5AD",
   accent: "#F2A65A", accentDeep: "#D9823A", accentSoft: "rgba(242,166,90,0.14)",
   ok: "#3D8A6A", warn: "#C49A2C", bad: "#B0463A",
+  // Palette tokens (mirrored from T)
+  paper: "#F4F1EA", paper2: "#FBF9F4",
+  ink: "#0E0E0C", graphite: "#5C5A55", stone: "#8A8780",
+  mist: "#B8B5AD", sand: "#E6E2D8", white: "#FFFFFF",
+  sun: "#F2A65A", sunDeep: "#D9823A", sunSoft: "rgba(242,166,90,0.14)",
+  link: "#3F6BB0", mapBg: "#EFEBE2",
 };
 export const T_DARK = {
+  // Semantic aliases
   bg: "#0E0E0C", surface: "#1A1A17", surface2: "#2A2A26",
   border: "#2A2A26", text: "#FBF9F4", textSub: "#B8B5AD",
   textDim: "#8A8780", textHint: "#5C5A55",
   accent: "#F2A65A", accentDeep: "#D9823A", accentSoft: "rgba(242,166,90,0.14)",
   ok: "#3D8A6A", warn: "#C49A2C", bad: "#B0463A",
+  // Palette tokens (dark values)
+  paper: "#1A1A17", paper2: "#2A2A26",
+  ink: "#FBF9F4", graphite: "#B8B5AD", stone: "#8A8780",
+  mist: "#5C5A55", sand: "#3A3A36", white: "#2A2A26",
+  sun: "#F2A65A", sunDeep: "#D9823A", sunSoft: "rgba(242,166,90,0.14)",
+  link: "#3F6BB0", mapBg: "#1A1A17",
 };
 export function getTheme(mode = "light") {
   return mode === "dark" ? T_DARK : T_LIGHT;

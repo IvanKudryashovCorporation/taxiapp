@@ -12,6 +12,16 @@ export const useStore = create((set, get) => ({
   profile: null,
   bootstrapped: false,
 
+  // theme
+  themeMode: 'light',
+  setThemeMode: async (mode) => {
+    try {
+      const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+      await AsyncStorage.setItem('passenger.theme', mode);
+    } catch {}
+    set({ themeMode: mode });
+  },
+
   // city (saved after first login)
   cityName: null,
   cityLat: null,
@@ -26,6 +36,11 @@ export const useStore = create((set, get) => ({
 
   async bootstrap() {
     const token = await getItem(STORAGE_KEYS.token);
+    try {
+      const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+      const savedTheme = await AsyncStorage.getItem('passenger.theme');
+      if (savedTheme) set({ themeMode: savedTheme });
+    } catch {}
     const profile = await getItem(STORAGE_KEYS.profile);
     const city = await getItem(STORAGE_KEYS.city);
     setAuthToken(token);

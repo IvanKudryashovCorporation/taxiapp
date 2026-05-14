@@ -1,20 +1,26 @@
 import React from "react";
 import { View, Text, Pressable, StyleSheet, ScrollView, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { User, LogOut, Settings, HelpCircle, Star, ChevronRight } from "lucide-react-native";
+import { User, LogOut, Settings, HelpCircle, Star, ChevronRight, Sun, Moon } from "lucide-react-native";
+import { useNavigation } from "@react-navigation/native";
 import { useStore } from "../state";
-import { T, radii, shadows, fonts } from "../theme";
+import { T, T_LIGHT, radii, shadows, fonts } from "../theme";
+import { useT } from "../hooks/useT";
 import NavBar from "../components/NavBar";
 
 const MENU = [
   { Icon: Settings,   label: "Настройки",          onPress: () => Alert.alert("Настройки", "Раздел в разработке") },
-  { Icon: HelpCircle, label: "Поддержка",           onPress: () => Alert.alert("Поддержка", "+7 978 000-00-00") },
+  { Icon: HelpCircle, label: "Поддержка",           onPress: () => Alert.alert("Поддержка", "Чат с оператором скоро будет доступен") },
   { Icon: Star,       label: "Оценить приложение",  onPress: () => Alert.alert("Спасибо!", "Оценка в разработке") },
 ];
 
 export default function ProfileScreen() {
-  const profile = useStore((s) => s.profile);
-  const logout  = useStore((s) => s.logout);
+  const navigation   = useNavigation();
+  const profile      = useStore((s) => s.profile);
+  const logout       = useStore((s) => s.logout);
+  const themeMode    = useStore((s) => s.themeMode);
+  const setThemeMode = useStore((s) => s.setThemeMode);
+  const TT           = useT();
 
   const initials = profile?.name
     ? profile.name.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase()
@@ -41,7 +47,7 @@ export default function ProfileScreen() {
                 pressed && { backgroundColor: T.paper },
                 i < MENU.length - 1 && s.rowSep,
               ]}
-              onPress={item.onPress}
+              onPress={item.label === "Поддержка" ? () => navigation.navigate("SupportChat") : item.onPress}
             >
               <View style={s.rowIconWrap}>
                 <item.Icon size={18} color={T.graphite} strokeWidth={1.8} />
@@ -50,6 +56,37 @@ export default function ProfileScreen() {
               <ChevronRight size={16} color={T.mist} strokeWidth={1.5} />
             </Pressable>
           ))}
+        </View>
+
+        <View style={[s.card, shadows.s1, { marginTop: 0 }]}>
+          <View style={[s.row, { justifyContent: 'space-between' }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View style={s.rowIconWrap}>
+                {themeMode === 'dark'
+                  ? <Moon size={18} color={T.graphite} strokeWidth={1.8} />
+                  : <Sun  size={18} color={T.graphite} strokeWidth={1.8} />}
+              </View>
+              <Text style={s.rowLabel}>
+                {themeMode === 'dark' ? 'Тёмная тема' : 'Светлая тема'}
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => setThemeMode(themeMode === 'dark' ? 'light' : 'dark')}
+              style={({ pressed }) => ({
+                width: 50, height: 28, borderRadius: 14,
+                backgroundColor: themeMode === 'dark' ? T.sun : T.sand,
+                justifyContent: 'center',
+                paddingHorizontal: 3,
+                opacity: pressed ? 0.8 : 1,
+              })}
+            >
+              <View style={{
+                width: 22, height: 22, borderRadius: 11,
+                backgroundColor: T.white,
+                alignSelf: themeMode === 'dark' ? 'flex-end' : 'flex-start',
+              }} />
+            </Pressable>
+          </View>
         </View>
 
         <Pressable

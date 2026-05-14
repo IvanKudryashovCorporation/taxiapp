@@ -11,6 +11,8 @@ function buildHTML(centerLat, centerLon) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
   html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #F0EDE8; }
+  .gm-style-cc, .gmnoprint { display: none !important; }
+  .gm-style a[href*="maps.google"],[href*="google.com/maps"] { display: none !important; }
 </style>
 </head>
 <body>
@@ -136,7 +138,7 @@ function buildHTML(centerLat, centerLon) {
     } catch(err) {}
   }
 <\/script>
-<script async src="https://maps.googleapis.com/maps/api/js?key=${GMAPS_KEY}&callback=initMap"><\/script>
+<script async src="https://maps.googleapis.com/maps/api/js?key=${GMAPS_KEY}&language=ru&region=RU&callback=initMap"><\/script>
 <\/body>
 <\/html>`;
 }

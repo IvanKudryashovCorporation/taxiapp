@@ -133,3 +133,46 @@ def list_operator_chat_heads() -> list[dict[str, Any]]:
         """,
         (CHAT_KIND_OPERATOR,),
     )
+
+
+def list_passenger_operator_messages(passenger_id: int, since_id: int = 0) -> list[dict[str, Any]]:
+    from backend.core.constants import CHAT_KIND_PASSENGER_OPERATOR
+    return query(
+        """
+        SELECT
+            id,
+            sender_type,
+            sender_id,
+            receiver_type,
+            receiver_id,
+            message_text AS text,
+            created_at
+        FROM chat_messages
+        WHERE chat_kind = %s
+          AND driver_id = %s
+          AND id > %s
+        ORDER BY id ASC
+        """,
+        (CHAT_KIND_PASSENGER_OPERATOR, str(passenger_id), since_id),
+    )
+
+
+def list_passenger_operator_chat_heads() -> list[dict[str, Any]]:
+    from backend.core.constants import CHAT_KIND_PASSENGER_OPERATOR
+    return query(
+        """
+        SELECT
+            p.id,
+            p.phone,
+            MAX(cm.created_at) AS last_message_at,
+            COUNT(CASE WHEN cm.sender_type != 'operator' AND cm.id > 0 THEN 1 END) AS msg_count
+        FROM passengers p
+        LEFT JOIN chat_messages cm
+            ON cm.driver_id = p.id::text
+           AND cm.chat_kind = %s
+        GROUP BY p.id, p.phone
+        HAVING MAX(cm.id) IS NOT NULL
+        ORDER BY last_message_at DESC NULLS LAST
+        """,
+        (CHAT_KIND_PASSENGER_OPERATOR,),
+    )

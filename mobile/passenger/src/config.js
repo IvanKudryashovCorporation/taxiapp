@@ -12,10 +12,10 @@ export const STORAGE_KEYS = {
 };
 
 export const CAR_CLASSES = [
-  { id: "econom", label: "Легковые", icon: "🚗", priceHint: "от 150 ₽" },
-  { id: "comfort", label: "Комфорт", icon: "✦", priceHint: "от 250 ₽" },
-  { id: "business", label: "Бизнес", icon: "◈", priceHint: "от 400 ₽" },
-  { id: "taxis_plus", label: "Такси+", icon: "+", priceHint: "от 200 ₽" },
+  { id: "econom",     label: "Эконом",  img: require("../assets/tariffs/econom.png"),     priceHint: "от 150 ₽" },
+  { id: "comfort",    label: "Комфорт", img: require("../assets/tariffs/comfort.png"),    priceHint: "от 250 ₽" },
+  { id: "business",   label: "Бизнес",  img: require("../assets/tariffs/business.png"),   priceHint: "от 400 ₽" },
+  { id: "taxis_plus", label: "Такси+",  img: require("../assets/tariffs/taxis_plus.png"), priceHint: "от 200 ₽" },
 ];
 
 export const PAYMENT_METHODS = [

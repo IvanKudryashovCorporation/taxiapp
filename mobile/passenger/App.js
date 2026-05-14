@@ -24,6 +24,7 @@ import MainScreen from "./src/screens/MainScreen";
 import OrdersScreen from "./src/screens/OrdersScreen";
 import FavoritesScreen from "./src/screens/FavoritesScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
+import SupportChatScreen from "./src/screens/SupportChatScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -36,6 +37,17 @@ function MainTabs() {
       <Tab.Screen name="fav"     component={FavoritesScreen} />
       <Tab.Screen name="profile" component={ProfileScreen} />
     </Tab.Navigator>
+  );
+}
+
+const LoggedInStack = createNativeStackNavigator();
+
+function LoggedInScreens() {
+  return (
+    <LoggedInStack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
+      <LoggedInStack.Screen name="Main" component={MainTabs} />
+      <LoggedInStack.Screen name="SupportChat" component={SupportChatScreen} />
+    </LoggedInStack.Navigator>
   );
 }
 
@@ -99,7 +111,7 @@ export default function App() {
             ) : !cityLat ? (
               <Stack.Screen name="City" component={CityScreen} />
             ) : (
-              <Stack.Screen name="Main" component={MainTabs} />
+              <Stack.Screen name="Main" component={LoggedInScreens} />
             )}
           </Stack.Navigator>
         </NavigationContainer>

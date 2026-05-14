@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
-from backend.schemas.chat import OperatorChatSendIn
+from backend.schemas.chat import OperatorChatSendIn, OperatorToPassengerChatSendIn
 from backend.schemas.operator import DriverCreateIn, ManualOrderCreateIn
 from backend.schemas.orders import OperatorAssignIn, RideCancelIn
 from backend.services import auth_service, chat_service, operator_service, order_service, stats_service
@@ -84,3 +84,18 @@ def operator_send_chat(driver_public_id: str, payload: OperatorChatSendIn) -> di
     if payload.driver_public_id.upper() != driver_public_id.upper():
         raise HTTPException(status_code=400, detail="driver_public_id в пути и теле запроса должны совпадать.")
     return {"message": chat_service.send_operator_message(driver_public_id.upper(), payload.text)}
+
+
+@router.get("/chats")
+def operator_chat_heads() -> dict:
+    return chat_service.list_all_chat_heads()
+
+
+@router.get("/chat/passenger/{passenger_id}")
+def operator_passenger_chat(passenger_id: int, since: int = 0) -> dict:
+    return {"messages": chat_service.list_passenger_operator_messages(passenger_id, since)}
+
+
+@router.post("/chat/passenger/{passenger_id}")
+def operator_send_passenger_chat(passenger_id: int, payload: OperatorToPassengerChatSendIn) -> dict:
+    return {"message": chat_service.send_operator_to_passenger_message(passenger_id, payload.text)}

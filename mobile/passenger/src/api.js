@@ -131,6 +131,20 @@ export const api = {
       throw unwrap(e);
     }
   },
+
+  async operatorChatHistory(since = 0) {
+    try {
+      const r = await client.get('/api/passenger/chat/operator', { params: { since } });
+      return r.data?.messages ?? [];
+    } catch { return []; }
+  },
+
+  async operatorChatSend(text) {
+    try {
+      const r = await client.post('/api/passenger/chat/operator', { text });
+      return r.data?.message ?? null;
+    } catch { return null; }
+  },
 };
 
 // Определить город по координатам (zoom=10 = уровень города)

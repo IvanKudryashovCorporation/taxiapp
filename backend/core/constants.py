@@ -42,6 +42,7 @@ ACTIVE_ORDER_STATUSES = (
 
 CHAT_KIND_OPERATOR = "operator"
 CHAT_KIND_RIDE = "ride"
+CHAT_KIND_PASSENGER_OPERATOR = "passenger_operator"
 
 SENDER_PASSENGER = "passenger"
 SENDER_DRIVER = "driver"

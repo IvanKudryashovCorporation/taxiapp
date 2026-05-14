@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback, useMemo } from "react"
 import {
   Animated,
   View, Text, TextInput, Pressable, ScrollView, FlatList,
-  StyleSheet, ActivityIndicator, Alert, Dimensions, Keyboard, Platform, PanResponder,
+  StyleSheet, ActivityIndicator, Alert, Dimensions, Keyboard, Platform, PanResponder, Image,
 } from "react-native";
 import * as Location from "expo-location";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -21,7 +21,7 @@ const DEFAULT_LAT = 44.6166;
 const DEFAULT_LON = 33.5254;
 const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get("window");
 const SHEET_EXPANDED_H  = SCREEN_H * 0.55;
-const SHEET_COLLAPSED_H = 128;
+const SHEET_COLLAPSED_H = 96;
 
 const QUICK_PLACES = [
   { icon: "home",      label: "Дом · Героев Сталинграда" },
@@ -532,7 +532,10 @@ export default function MainScreen() {
                     style={[s.tariffCard, selected && s.tariffCardSel]}
                     onPress={() => setCarClass(c.id)}
                   >
-                    <Icon name="car" size={28} color={selected ? T.ink : T.graphite} />
+                    <Image
+                      source={c.img}
+                      style={{ width: 100, height: 66, resizeMode: 'contain' }}
+                    />
                     <Text style={[s.tariffLabel, selected && { color: T.ink }]}>{c.label}</Text>
                     <Text style={[s.tariffPrice, selected && { color: T.ink }]}>{price}</Text>
                     <Text style={s.tariffEta}>4 мин</Text>
@@ -736,7 +739,7 @@ const s = StyleSheet.create({
   navBarFixed: {
     position: "absolute",
     left: 0, right: 0, bottom: 0,
-    zIndex: 20,
+    zIndex: 30,
   },
 
   // Top bar (Yandex Go: menu | search-pill | avatar)
@@ -792,7 +795,7 @@ const s = StyleSheet.create({
 
   // Sheet
   sheet: {
-    position: "absolute", left: 0, right: 0,
+    position: "absolute", left: 0, right: 0, bottom: 60,
     backgroundColor: T.paper2,
     borderTopLeftRadius: radii.r5, borderTopRightRadius: radii.r5,
     overflow: "hidden", zIndex: 22,
@@ -878,7 +881,7 @@ const s = StyleSheet.create({
   },
   tariffRow: { gap: 10, paddingVertical: 4 },
   tariffCard: {
-    width: 124, height: 148, borderRadius: radii.r3,
+    width: 124, height: 168, borderRadius: radii.r3,
     backgroundColor: T.paper2, borderWidth: 1, borderColor: T.sand,
     paddingHorizontal: 12, paddingVertical: 14,
     alignItems: "flex-start", justifyContent: "space-between",

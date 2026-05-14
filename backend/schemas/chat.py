@@ -16,6 +16,15 @@ class RideChatSendIn(BaseModel):
     text: str = Field(min_length=1, max_length=2000)
 
 
+class PassengerOperatorChatSendIn(BaseModel):
+    text: str = Field(min_length=1, max_length=2000)
+
+
+class OperatorToPassengerChatSendIn(BaseModel):
+    passenger_id: int
+    text: str = Field(min_length=1, max_length=2000)
+
+
 class LegacyChatSendRequest(BaseModel):
     driver_id: str = Field(min_length=1, max_length=64)
     sender: str = Field(pattern="^(driver|admin)$")

@@ -16,14 +16,16 @@ function buildHTML(centerLat, centerLon) {
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
-  html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #1a1f2c; }
+  html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #1a2230; }
+  .gm-style-cc, .gmnoprint { display: none !important; }
+  .gm-style a[href*="maps.google"],[href*="google.com/maps"] { display: none !important; }
 </style>
 </head>
 <body>
 <div id="map"></div>
 <script>
   var CAR_IMG_SRC = ${imgSrcJson};
-  var map, carMarker;
+  var map;
   var orderMarkers = [];
   var routePolyline = null;
   var prevDeg = 0;
@@ -31,23 +33,23 @@ function buildHTML(centerLat, centerLon) {
   var pendingCmds = [];
 
   var DARK_STYLE = [
-    { elementType: "geometry",                                       stylers: [{ color: "#1a1f2c" }] },
-    { elementType: "labels.text.fill",                               stylers: [{ color: "#8fa8b0" }] },
-    { elementType: "labels.text.stroke",                             stylers: [{ color: "#1a1f2c" }] },
-    { featureType: "administrative",  elementType: "geometry",       stylers: [{ visibility: "off" }] },
-    { featureType: "poi",                                            stylers: [{ visibility: "off" }] },
-    { featureType: "transit",                                        stylers: [{ visibility: "off" }] },
-    { featureType: "road",            elementType: "geometry.fill",  stylers: [{ color: "#2a5566" }] },
-    { featureType: "road",            elementType: "geometry.stroke",stylers: [{ color: "#1a3a45" }] },
-    { featureType: "road",            elementType: "labels.icon",    stylers: [{ visibility: "off" }] },
-    { featureType: "road.arterial",   elementType: "labels.text.fill",stylers: [{ color: "#90bdc5" }] },
-    { featureType: "road.highway",    elementType: "geometry",       stylers: [{ color: "#3a6e82" }] },
-    { featureType: "road.highway",    elementType: "labels.text.fill",stylers: [{ color: "#b8d8e0" }] },
-    { featureType: "road.local",      elementType: "labels.text.fill",stylers: [{ color: "#708a90" }] },
-    { featureType: "water",           elementType: "geometry",       stylers: [{ color: "#0d1b29" }] },
-    { featureType: "landscape",       elementType: "geometry",       stylers: [{ color: "#1a2030" }] },
-    { featureType: "building",        elementType: "geometry.fill",  stylers: [{ color: "#242b3d" }] },
-    { featureType: "building",        elementType: "geometry.stroke",stylers: [{ color: "#1a2030" }] },
+    { elementType: "geometry",                                         stylers: [{ color: "#1a2230" }] },
+    { elementType: "labels.text.fill",                                 stylers: [{ color: "#c8dce4" }] },
+    { elementType: "labels.text.stroke",                               stylers: [{ color: "#0a1520" }] },
+    { featureType: "administrative",    elementType: "geometry",       stylers: [{ visibility: "off" }] },
+    { featureType: "poi",                                              stylers: [{ visibility: "off" }] },
+    { featureType: "transit",                                          stylers: [{ visibility: "off" }] },
+    { featureType: "road",              elementType: "geometry.fill",  stylers: [{ color: "#2e6a80" }] },
+    { featureType: "road",              elementType: "geometry.stroke",stylers: [{ color: "#1e4a5a" }] },
+    { featureType: "road",              elementType: "labels.icon",    stylers: [{ visibility: "off" }] },
+    { featureType: "road.arterial",     elementType: "labels.text.fill",stylers: [{ color: "#a8ccd4" }] },
+    { featureType: "road.highway",      elementType: "geometry",       stylers: [{ color: "#4a8da0" }] },
+    { featureType: "road.highway",      elementType: "labels.text.fill",stylers: [{ color: "#c8e4ec" }] },
+    { featureType: "road.local",        elementType: "labels.text.fill",stylers: [{ color: "#7aaab5" }] },
+    { featureType: "water",             elementType: "geometry",       stylers: [{ color: "#0a3060" }] },
+    { featureType: "landscape",         elementType: "geometry",       stylers: [{ color: "#1e2a1a" }] },
+    { featureType: "building",          elementType: "geometry.fill",  stylers: [{ color: "#2a3354" }] },
+    { featureType: "building",          elementType: "geometry.stroke",stylers: [{ color: "#3a4568" }] },
   ];
 
   function initMap() {
@@ -76,35 +78,50 @@ function buildHTML(centerLat, centerLon) {
     });
   }
 
-  function getCarIcon(deg) {
-    var svg = '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="80" height="80">' +
-      '<image href="' + CAR_IMG_SRC + '" x="18" y="14.5" width="44" height="51" ' +
-      'transform="rotate(' + deg + ' 40 40)" style="filter:drop-shadow(0px 2px 4px rgba(0,0,0,0.55))"/>' +
-      '</svg>';
-    return {
-      url: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg),
-      scaledSize: new google.maps.Size(80, 80),
-      anchor: new google.maps.Point(40, 40),
-    };
+  var carOverlay = null;
+
+  function CarOverlay() {
+    this.latLng = null;
+    this.deg = 0;
   }
+  CarOverlay.prototype = new google.maps.OverlayView();
+  CarOverlay.prototype.onAdd = function() {
+    var div = document.createElement('div');
+    div.style.cssText = 'position:absolute;width:80px;height:80px;margin-left:-40px;margin-top:-40px;pointer-events:none;';
+    var img = document.createElement('img');
+    img.src = CAR_IMG_SRC;
+    img.style.cssText = 'width:44px;height:51px;position:absolute;left:18px;top:14.5px;filter:drop-shadow(0px 2px 4px rgba(0,0,0,0.55));transform-origin:22px 25.5px;transition:transform 0.3s linear;';
+    div.appendChild(img);
+    this._div = div;
+    this._img = img;
+    this.getPanes().overlayLayer.appendChild(div);
+  };
+  CarOverlay.prototype.draw = function() {
+    if (!this.latLng || !this._div) return;
+    var p = this.getProjection().fromLatLngToDivPixel(this.latLng);
+    this._div.style.left = Math.round(p.x) + 'px';
+    this._div.style.top  = Math.round(p.y) + 'px';
+  };
+  CarOverlay.prototype.onRemove = function() {
+    if (this._div && this._div.parentNode) this._div.parentNode.removeChild(this._div);
+    this._div = null;
+  };
+  CarOverlay.prototype.setPositionAndAngle = function(lat, lon, deg) {
+    this.latLng = new google.maps.LatLng(lat, lon);
+    if (this._img) this._img.style.transform = 'rotate(' + deg + 'deg)';
+    this.draw();
+  };
 
   function setCarPosition(lat, lon, compassHeading) {
     var target = (compassHeading !== null && compassHeading !== undefined && compassHeading >= 0) ? compassHeading : prevDeg;
     var diff   = ((target - prevDeg + 540) % 360) - 180;
     var smooth = prevDeg + diff;
     prevDeg = smooth;
-
-    var pos = { lat: lat, lng: lon };
-    if (!carMarker) {
-      carMarker = new google.maps.Marker({
-        position: pos, map: map,
-        icon: getCarIcon(smooth),
-        zIndex: 100, optimized: false,
-      });
-    } else {
-      carMarker.setPosition(pos);
-      carMarker.setIcon(getCarIcon(smooth));
+    if (!carOverlay) {
+      carOverlay = new CarOverlay();
+      carOverlay.setMap(map);
     }
+    carOverlay.setPositionAndAngle(lat, lon, smooth);
   }
 
   function setOrderMarkers(list) {
@@ -156,7 +173,7 @@ function buildHTML(centerLat, centerLon) {
     } catch(err) {}
   }
 <\/script>
-<script async src="https://maps.googleapis.com/maps/api/js?key=${GMAPS_KEY}&callback=initMap"><\/script>
+<script async src="https://maps.googleapis.com/maps/api/js?key=${GMAPS_KEY}&language=ru&region=RU&callback=initMap"><\/script>
 <\/body>
 <\/html>`;
 }

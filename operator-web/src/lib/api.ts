@@ -103,6 +103,24 @@ export interface DashboardKpi {
 
 export interface HourPoint { hour: number; orders: number; }
 
+export interface ChatHead {
+  kind: 'driver' | 'passenger';
+  id: string;
+  name: string;
+  is_online: boolean;
+  last_message_at: string;
+}
+
+export interface ChatMessage {
+  id: number;
+  sender_type: string;
+  sender_id: string;
+  receiver_type: string;
+  receiver_id: string;
+  text: string;
+  created_at: string;
+}
+
 // ─────────────────────────────────────────────────────────────────────
 // Endpoints. Если бэкенд их пока не реализует — UI работает на MOCK
 // (см. lib/mock.ts), а ошибка просто логируется.
@@ -124,6 +142,17 @@ export const api = {
 
   // Map
   fleetPositions: () => unwrap(client.get<{ driver_id: number; lat: number; lon: number; heading?: number; status?: string }[]>("/operator/map/fleet")),
+
+  // Chat support
+  chatHeads: () => unwrap(client.get<{ chats: ChatHead[] }>('/operator/chats')),
+  driverChatMessages: (driverPublicId: string, since = 0) =>
+    unwrap(client.get<{ messages: ChatMessage[] }>(`/operator/chat/${driverPublicId}`, { params: { since } })),
+  sendDriverChatMessage: (driverPublicId: string, text: string) =>
+    unwrap(client.post<{ message: ChatMessage }>(`/operator/chat/${driverPublicId}`, { driver_public_id: driverPublicId, text })),
+  passengerChatMessages: (passengerId: string, since = 0) =>
+    unwrap(client.get<{ messages: ChatMessage[] }>(`/operator/chat/passenger/${passengerId}`, { params: { since } })),
+  sendPassengerChatMessage: (passengerId: string, text: string) =>
+    unwrap(client.post<{ message: ChatMessage }>(`/operator/chat/passenger/${passengerId}`, { passenger_id: parseInt(passengerId), text })),
 };
 
 export default api;
