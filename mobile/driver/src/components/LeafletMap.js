@@ -9,146 +9,141 @@ const CAR_IMG_SRC = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAG4AAAB+CAYAA
 
 function buildHTML(centerLat, centerLon) {
   const imgSrcJson = JSON.stringify(CAR_IMG_SRC);
+  const GMAPS_KEY  = "AIzaSyCxJVSEVOuJWMkVtuHsDDfFWdLbH0nvXUo";
 
   return `<!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
-  html,body,#map { margin:0; padding:0; width:100%; height:100%; background:#0F121C; }
-  .leaflet-container { background:#1A1E2E; }
-  .leaflet-control-zoom       { display:none !important; }
-  .leaflet-control-attribution{ display:none !important; }
-  .leaflet-attribution-flag   { display:none !important; }
-
-  .car-icon-outer {
-    background: transparent !important;
-    border: none !important;
-    overflow: visible !important;
-    display: block !important;
-  }
-  .car-rotate {
-    width: 44px; height: 51px;
-    transform-origin: 22px 25.5px;
-    transition: transform 0.4s ease-out;
-    display: block !important;
-    filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.55));
-  }
-  .car-rotate img { width: 44px; height: 51px; display: block !important; pointer-events: none; }
-
-  .price-tip {
-    background: #0E0E0C !important;
-    border: none !important;
-    border-radius: 12px !important;
-    color: #F4F1EA !important;
-    font-weight: 700 !important;
-    font-size: 12px !important;
-    font-family: monospace !important;
-    padding: 4px 10px !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
-    white-space: nowrap !important;
-    letter-spacing: 0.3px !important;
-  }
-  .price-tip::before { display: none !important; }
-<\/style>
-<\/head>
+  html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #1a1f2c; }
+</style>
+</head>
 <body>
-<div id="map"><\/div>
+<div id="map"></div>
 <script>
-  /* PNG машинки как data URL */
   var CAR_IMG_SRC = ${imgSrcJson};
+  var map, carMarker;
+  var orderMarkers = [];
+  var routePolyline = null;
+  var prevDeg = 0;
+  var mapReady = false;
+  var pendingCmds = [];
 
-  var map = L.map('map', {
-    zoomControl: false,
-    attributionControl: false,
-    markerZoomAnimation: false,
-    zoomSnap: 0.5
-  }).setView([${centerLat},${centerLon}], 14);
+  var DARK_STYLE = [
+    { elementType: "geometry",                                       stylers: [{ color: "#1a1f2c" }] },
+    { elementType: "labels.text.fill",                               stylers: [{ color: "#8fa8b0" }] },
+    { elementType: "labels.text.stroke",                             stylers: [{ color: "#1a1f2c" }] },
+    { featureType: "administrative",  elementType: "geometry",       stylers: [{ visibility: "off" }] },
+    { featureType: "poi",                                            stylers: [{ visibility: "off" }] },
+    { featureType: "transit",                                        stylers: [{ visibility: "off" }] },
+    { featureType: "road",            elementType: "geometry.fill",  stylers: [{ color: "#2a5566" }] },
+    { featureType: "road",            elementType: "geometry.stroke",stylers: [{ color: "#1a3a45" }] },
+    { featureType: "road",            elementType: "labels.icon",    stylers: [{ visibility: "off" }] },
+    { featureType: "road.arterial",   elementType: "labels.text.fill",stylers: [{ color: "#90bdc5" }] },
+    { featureType: "road.highway",    elementType: "geometry",       stylers: [{ color: "#3a6e82" }] },
+    { featureType: "road.highway",    elementType: "labels.text.fill",stylers: [{ color: "#b8d8e0" }] },
+    { featureType: "road.local",      elementType: "labels.text.fill",stylers: [{ color: "#708a90" }] },
+    { featureType: "water",           elementType: "geometry",       stylers: [{ color: "#0d1b29" }] },
+    { featureType: "landscape",       elementType: "geometry",       stylers: [{ color: "#1a2030" }] },
+    { featureType: "building",        elementType: "geometry.fill",  stylers: [{ color: "#242b3d" }] },
+    { featureType: "building",        elementType: "geometry.stroke",stylers: [{ color: "#1a2030" }] },
+  ];
 
-  L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&key=AIzaSyCxJVSEVOuJWMkVtuHsDDfFWdLbH0nvXUo', {
-    maxZoom: 20,
-    subdomains: ['mt0','mt1','mt2','mt3'],
-  }).addTo(map);
+  function initMap() {
+    map = new google.maps.Map(document.getElementById('map'), {
+      center: { lat: ${centerLat}, lng: ${centerLon} },
+      zoom: 15,
+      disableDefaultUI: true,
+      styles: DARK_STYLE,
+      gestureHandling: 'greedy',
+      clickableIcons: false,
+    });
 
-  /* PNG машинки смотрит ~45 NE -> компенсируем */
-  var CAR_BASE_ANGLE = -45;
+    map.addListener('center_changed', function() {
+      var c = map.getCenter();
+      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'center', lat: c.lat(), lon: c.lng() }));
+    });
+    map.addListener('dragstart', function() {
+      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'userDrag' }));
+    });
 
-  var prevCarLat = null, prevCarLon = null, carBearing = 0;
-
-  function getBearing(lat1, lon1, lat2, lon2) {
-    var phi1 = lat1 * Math.PI / 180;
-    var phi2 = lat2 * Math.PI / 180;
-    var dl   = (lon2 - lon1) * Math.PI / 180;
-    var y = Math.sin(dl) * Math.cos(phi2);
-    var x = Math.cos(phi1) * Math.sin(phi2) - Math.sin(phi1) * Math.cos(phi2) * Math.cos(dl);
-    return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+    google.maps.event.addListenerOnce(map, 'idle', function() {
+      mapReady = true;
+      pendingCmds.forEach(function(cmd) { executeCmd(cmd); });
+      pendingCmds = [];
+      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'ready' }));
+    });
   }
 
-  var carMarker = null;
-  var orderMarkers = [];
+  function getCarIcon(deg) {
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="80" height="80">' +
+      '<image href="' + CAR_IMG_SRC + '" x="18" y="14.5" width="44" height="51" ' +
+      'transform="rotate(' + deg + ' 40 40)" style="filter:drop-shadow(0px 2px 4px rgba(0,0,0,0.55))"/>' +
+      '</svg>';
+    return {
+      url: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg),
+      scaledSize: new google.maps.Size(80, 80),
+      anchor: new google.maps.Point(40, 40),
+    };
+  }
 
   function setCarPosition(lat, lon, compassHeading) {
-    if (compassHeading !== null && compassHeading !== undefined && compassHeading >= 0) {
-      carBearing = compassHeading;
-    } else if (prevCarLat !== null &&
-              (Math.abs(lat - prevCarLat) > 0.00002 || Math.abs(lon - prevCarLon) > 0.00002)) {
-      carBearing = getBearing(prevCarLat, prevCarLon, lat, lon);
-    }
-    prevCarLat = lat;
-    prevCarLon = lon;
+    var target = (compassHeading !== null && compassHeading !== undefined && compassHeading >= 0) ? compassHeading : prevDeg;
+    var diff   = ((target - prevDeg + 540) % 360) - 180;
+    var smooth = prevDeg + diff;
+    prevDeg = smooth;
 
-    var deg = (carBearing + CAR_BASE_ANGLE + 360) % 360;
-
-    if (carMarker) {
-      carMarker.setLatLng([lat, lon]);
-      var el = carMarker.getElement();
-      if (el) {
-        var rot = el.querySelector('.car-rotate');
-        if (rot) {
-          var prev = parseFloat(rot.dataset.deg || 0);
-          var diff = ((deg - prev + 540) % 360) - 180;
-          var smooth = prev + diff;
-          rot.dataset.deg = smooth;
-          rot.style.transform = 'rotate(' + smooth + 'deg)';
-        }
-      }
-    } else {
-      var icon = L.divIcon({
-        className: 'car-icon-outer',
-        html: '<div class="car-rotate" style="transform:rotate(' + deg + 'deg)"><img src="' + CAR_IMG_SRC + '" alt=""/></div>',
-        iconSize:   [44, 51],
-        iconAnchor: [22, 25]
+    var pos = { lat: lat, lng: lon };
+    if (!carMarker) {
+      carMarker = new google.maps.Marker({
+        position: pos, map: map,
+        icon: getCarIcon(smooth),
+        zIndex: 100, optimized: false,
       });
-      carMarker = L.marker([lat, lon], { icon: icon, zIndexOffset: 1000 }).addTo(map);
+    } else {
+      carMarker.setPosition(pos);
+      carMarker.setIcon(getCarIcon(smooth));
     }
   }
 
   function setOrderMarkers(list) {
-    orderMarkers.forEach(function(m) { map.removeLayer(m); });
+    orderMarkers.forEach(function(m) { m.setMap(null); });
     orderMarkers = [];
     list.forEach(function(m) {
-      var marker = L.circleMarker([m.lat, m.lon], {
-        radius: 16,
-        color: m.color || '#F5CF31',
-        fillColor: m.color || '#F5CF31',
-        fillOpacity: 0.95,
-        weight: 3
-      }).addTo(map);
-
-      marker.bindTooltip(m.priceLabel || m.label || '', {
-        permanent: true, direction: 'top', offset: [0, -18], className: 'price-tip'
+      var color  = m.color || '#F5CF31';
+      var label  = m.priceLabel || m.label || '';
+      var svgCircle = '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40">' +
+        '<circle cx="20" cy="20" r="17" fill="' + color + '" stroke="#0E0E0C" stroke-width="2.5"/>' +
+        '</svg>';
+      var marker = new google.maps.Marker({
+        position: { lat: m.lat, lng: m.lon },
+        map: map,
+        icon: {
+          url: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgCircle),
+          scaledSize: new google.maps.Size(40, 40),
+          anchor: new google.maps.Point(20, 20),
+        },
+        label: label ? { text: label, color: '#0E0E0C', fontSize: '11px', fontWeight: '700', fontFamily: 'monospace' } : undefined,
+        zIndex: 50, optimized: false,
       });
-
       (function(idx) {
-        marker.on('click', function() {
+        marker.addListener('click', function() {
           window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'markerTap', index: idx }));
         });
       })(m.index != null ? m.index : 0);
-
       orderMarkers.push(marker);
     });
+  }
+
+  function executeCmd(msg) {
+    if (msg.cmd === 'setView') {
+      map.setCenter({ lat: msg.lat, lng: msg.lon });
+      if (msg.zoom) map.setZoom(msg.zoom);
+    }
+    if (msg.cmd === 'panTo')      map.panTo({ lat: msg.lat, lng: msg.lon });
+    if (msg.cmd === 'setCar')     setCarPosition(msg.lat, msg.lon, msg.heading);
+    if (msg.cmd === 'setMarkers') setOrderMarkers(msg.markers);
   }
 
   document.addEventListener('message', handleMsg);
@@ -156,28 +151,12 @@ function buildHTML(centerLat, centerLon) {
   function handleMsg(e) {
     try {
       var msg = JSON.parse(e.data);
-      if (msg.cmd === 'setView')    map.setView([msg.lat, msg.lon], msg.zoom || 14);
-      if (msg.cmd === 'panTo')      map.panTo([msg.lat, msg.lon]);
-      if (msg.cmd === 'setCar')     setCarPosition(msg.lat, msg.lon, msg.heading);
-      if (msg.cmd === 'setMarkers') setOrderMarkers(msg.markers);
+      if (!mapReady) { pendingCmds.push(msg); return; }
+      executeCmd(msg);
     } catch(err) {}
   }
-
-  map.on('moveend', function() {
-    var c = map.getCenter();
-    window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'center', lat: c.lat, lon: c.lng }));
-  });
-
-  map.on('dragstart', function() {
-    window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'userDrag' }));
-  });
-
-  map.whenReady(function() {
-    setTimeout(function() {
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'ready' }));
-    }, 300);
-  });
 <\/script>
+<script async src="https://maps.googleapis.com/maps/api/js?key=${GMAPS_KEY}&callback=initMap"><\/script>
 <\/body>
 <\/html>`;
 }
