@@ -30,13 +30,13 @@ function buildHTML(centerLat, centerLon) {
     display: block !important;
   }
   .car-rotate {
-    width: 66px; height: 76px;
-    transform-origin: 33px 38px;
+    width: 44px; height: 51px;
+    transform-origin: 22px 25.5px;
     transition: transform 0.4s ease-out;
     display: block !important;
-    filter: drop-shadow(0px 3px 6px rgba(0,0,0,0.55));
+    filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.55));
   }
-  .car-rotate img { width: 66px; height: 76px; display: block !important; pointer-events: none; }
+  .car-rotate img { width: 44px; height: 51px; display: block !important; pointer-events: none; }
 
   .price-tip {
     background: #0E0E0C !important;
@@ -67,8 +67,9 @@ function buildHTML(centerLat, centerLon) {
     zoomSnap: 0.5
   }).setView([${centerLat},${centerLon}], 14);
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    maxZoom: 19
+  L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&key=AIzaSyCxJVSEVOuJWMkVtuHsDDfFWdLbH0nvXUo', {
+    maxZoom: 20,
+    subdomains: ['mt0','mt1','mt2','mt3'],
   }).addTo(map);
 
   /* PNG машинки смотрит ~45 NE -> компенсируем */
@@ -117,8 +118,8 @@ function buildHTML(centerLat, centerLon) {
       var icon = L.divIcon({
         className: 'car-icon-outer',
         html: '<div class="car-rotate" style="transform:rotate(' + deg + 'deg)"><img src="' + CAR_IMG_SRC + '" alt=""/></div>',
-        iconSize:   [66, 76],
-        iconAnchor: [33, 38]
+        iconSize:   [44, 51],
+        iconAnchor: [22, 25]
       });
       carMarker = L.marker([lat, lon], { icon: icon, zIndexOffset: 1000 }).addTo(map);
     }

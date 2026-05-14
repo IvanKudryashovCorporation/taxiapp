@@ -48,8 +48,9 @@ function buildHTML(centerLat, centerLon) {
   }).setView([${centerLat},${centerLon}], 15);
 
   /* Светлая тема — как в Яндекс Go */
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    maxZoom: 19,
+  L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&key=AIzaSyCxJVSEVOuJWMkVtuHsDDfFWdLbH0nvXUo', {
+    maxZoom: 20,
+    subdomains: ['mt0','mt1','mt2','mt3'],
   }).addTo(map);
 
   /* ── Точка пользователя (жёлтая, как в Яндекс Go) ── */

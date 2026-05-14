@@ -23,6 +23,7 @@ import CityScreen from "./src/screens/CityScreen";
 import MainScreen from "./src/screens/MainScreen";
 import OrdersScreen from "./src/screens/OrdersScreen";
 import FavoritesScreen from "./src/screens/FavoritesScreen";
+import ProfileScreen from "./src/screens/ProfileScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -30,9 +31,10 @@ const Tab = createBottomTabNavigator();
 function MainTabs() {
   return (
     <Tab.Navigator screenOptions={{ headerShown: false, tabBarStyle: { display: "none" } }}>
-      <Tab.Screen name="create" component={MainScreen} />
-      <Tab.Screen name="ride"   component={OrdersScreen} />
-      <Tab.Screen name="fav"    component={FavoritesScreen} />
+      <Tab.Screen name="create"  component={MainScreen} />
+      <Tab.Screen name="ride"    component={OrdersScreen} />
+      <Tab.Screen name="fav"     component={FavoritesScreen} />
+      <Tab.Screen name="profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }

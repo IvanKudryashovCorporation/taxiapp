@@ -12,3 +12,5 @@ export const STORAGE_KEYS = {
 
 // How often the driver pushes its GPS to the backend (ms)
 export const LOCATION_PUSH_INTERVAL = 10_000;
+
+export const GOOGLE_MAPS_KEY = "AIzaSyCxJVSEVOuJWMkVtuHsDDfFWdLbH0nvXUo";

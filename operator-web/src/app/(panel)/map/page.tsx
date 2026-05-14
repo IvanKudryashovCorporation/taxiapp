@@ -18,43 +18,13 @@ export default function MapPage() {
 
   return (
     <div className="relative -mx-6 -my-6" style={{ height: "calc(100vh - 64px)" }}>
-      {/* Map background (бумажный стиль) */}
-      <div
-        className="absolute inset-0"
-        style={{
-          backgroundColor: "var(--c-map-bg)",
-          backgroundImage: `
-            linear-gradient(to right, var(--c-sand) 1px, transparent 1px),
-            linear-gradient(to bottom, var(--c-sand) 1px, transparent 1px)
-          `,
-          backgroundSize: "80px 80px",
-        }}
+      {/* Google Maps */}
+      <iframe
+        className="absolute inset-0 w-full h-full border-0"
+        loading="lazy"
+        referrerPolicy="no-referrer-when-downgrade"
+        src="https://www.google.com/maps/embed/v1/view?key=AIzaSyCxJVSEVOuJWMkVtuHsDDfFWdLbH0nvXUo&center=44.6166,33.5254&zoom=13&maptype=roadmap"
       />
-
-      {/* Mock pins */}
-      {MOCK_DRIVERS.filter((d) => d.status && filters[d.status as FleetFilter]).map((d, i) => {
-        const x = 18 + (i * 11) % 70;
-        const y = 18 + (i * 17) % 60;
-        return (
-          <div
-            key={d.id}
-            className="absolute"
-            style={{ left: `${x}%`, top: `${y}%`, transform: "translate(-50%, -50%)" }}
-            title={`${d.full_name} · ${d.vehicle_plate}`}
-          >
-            <div className="w-3 h-3 rounded-full bg-ink shadow-s2 ring-2 ring-paper2" />
-          </div>
-        );
-      })}
-      {MOCK_ORDERS.filter((o) => o.status === "searching_driver" || o.status === "created").map((o, i) => (
-        <div
-          key={o.public_id}
-          className="absolute"
-          style={{ left: `${30 + i * 7}%`, top: `${30 + i * 13}%`, transform: "translate(-50%, -50%)" }}
-        >
-          <div className="w-3.5 h-3.5 rounded-full bg-sun shadow-s2 ring-2 ring-paper2 animate-pulse" />
-        </div>
-      ))}
 
       {/* Floating left panel */}
       <div className="absolute top-4 left-4 w-[320px] bg-paper2 rounded-r3 border border-sand shadow-s2 p-4">

@@ -23,3 +23,5 @@ export const PAYMENT_METHODS = [
   { id: "card", label: "Карта" },
   { id: "sbp", label: "СБП" },
 ];
+
+export const GOOGLE_MAPS_KEY = "AIzaSyCxJVSEVOuJWMkVtuHsDDfFWdLbH0nvXUo";

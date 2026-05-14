@@ -21,7 +21,7 @@ const DEFAULT_LAT = 44.6166;
 const DEFAULT_LON = 33.5254;
 const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get("window");
 const SHEET_EXPANDED_H  = SCREEN_H * 0.55;
-const SHEET_COLLAPSED_H = 96;
+const SHEET_COLLAPSED_H = 128;
 
 const QUICK_PLACES = [
   { icon: "home",      label: "Дом · Героев Сталинграда" },
@@ -89,7 +89,6 @@ export default function MainScreen() {
   const initLat = cityLat || DEFAULT_LAT;
   const initLon = cityLon || DEFAULT_LON;
 
-  const [tab,           setTab]           = useState(currentOrder ? "ride" : "create");
   const [sheetExpanded, setSheetExpanded] = useState(true);
   const [keyboardH,     setKeyboardH]     = useState(0);
 
@@ -159,11 +158,6 @@ export default function MainScreen() {
   const [routeInfo, setRouteInfo] = useState(null);
   const [busy,      setBusy]      = useState(false);
   const [status,    setStatus]    = useState("");
-
-  useEffect(() => {
-    if (currentOrder && tab === "create") setTab("ride");
-    if (!currentOrder && tab === "ride")  setTab("create");
-  }, [currentOrder]); // eslint-disable-line
 
   const handleMapReady = useCallback(() => {
     if (cityLat) mapRef.current?.setCenter(cityLat, cityLon, 13);
@@ -332,7 +326,7 @@ export default function MainScreen() {
 
 
       {/* My-location FAB */}
-      {tab === "create" && !activeField && (
+      {!activeField && (
         <Pressable
           style={[s.locFab, shadows.s2]}
           onPress={async () => {
@@ -349,7 +343,7 @@ export default function MainScreen() {
       )}
 
       {/* Pickup pin (centered on map) */}
-      {tab === "create" && !activeField && pickupLat == null && (
+      {!activeField && pickupLat == null && (
         <View style={s.pinOverlay} pointerEvents="none">
           <PickupPin loading={geocoding} />
         </View>
@@ -422,7 +416,7 @@ export default function MainScreen() {
           </Pressable>
         </View>
 
-        {!activeField && sheetExpanded && tab === "create" && (
+        {!activeField && sheetExpanded && (
           <ScrollView
             contentContainerStyle={s.sheetInner}
             keyboardShouldPersistTaps="handled"
@@ -584,19 +578,11 @@ export default function MainScreen() {
           </ScrollView>
         )}
 
-        {!activeField && sheetExpanded && tab === "history" && (
-          <HistoryTab items={history} />
-        )}
-
-        {!activeField && sheetExpanded && tab === "ride" && currentOrder && (
-          <RideTab order={currentOrder} onRefresh={refreshState} />
-        )}
-
       </Animated.View>
 
       {!activeField && (
         <View style={s.navBarFixed}>
-          <NavBar active={tab} onChange={setTab} />
+          <NavBar active="create" />
         </View>
       )}
 
@@ -809,7 +795,7 @@ const s = StyleSheet.create({
     position: "absolute", left: 0, right: 0,
     backgroundColor: T.paper2,
     borderTopLeftRadius: radii.r5, borderTopRightRadius: radii.r5,
-    overflow: "hidden", zIndex: 20,
+    overflow: "hidden", zIndex: 22,
   },
   handleWrap: { alignItems: "center", paddingVertical: 10 },
   handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: T.mist },

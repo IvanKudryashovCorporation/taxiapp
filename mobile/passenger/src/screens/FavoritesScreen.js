@@ -3,6 +3,7 @@ import { View, Text, FlatList, StyleSheet, Pressable, Alert } from "react-native
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Heart, Home, Briefcase, MapPin, Plus, ChevronRight } from "lucide-react-native";
 import { T, radii } from "../theme";
+import NavBar from "../components/NavBar";
 
 const DEFAULT_FAVS = [
   { id: "home", type: "home", label: "Дом",    addr: null },
@@ -43,7 +44,7 @@ export default function FavoritesScreen() {
         data={favs}
         keyExtractor={(i) => i.id}
         renderItem={({ item }) => <FavRow item={item} />}
-        contentContainerStyle={s.list}
+        contentContainerStyle={[s.list, { paddingBottom: 100 }]}
         ItemSeparatorComponent={() => <View style={s.sep} />}
         ListFooterComponent={
           <Pressable
@@ -58,6 +59,7 @@ export default function FavoritesScreen() {
         }
         showsVerticalScrollIndicator={false}
       />
+      <NavBar active="fav" />
     </SafeAreaView>
   );
 }
