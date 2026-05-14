@@ -59,7 +59,9 @@ export function Sidebar() {
               href={item.href}
               className={cn(
                 "my-0.5 px-3 rounded-r2 flex items-center gap-3 transition-colors",
-                active ? "bg-ink text-paper" : "text-ink3 hover:bg-paper",
+                active
+                  ? "border-l-4 border-sun text-ink bg-sun/5"
+                  : "border-l-4 border-transparent text-graphite hover:bg-paper hover:text-ink",
               )}
               style={{ paddingTop: 10, paddingBottom: 10 }}
             >

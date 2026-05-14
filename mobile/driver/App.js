@@ -6,9 +6,17 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { View, ActivityIndicator, Text } from "react-native";
+import { useFonts } from "expo-font";
+import {
+  Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold,
+} from "@expo-google-fonts/inter";
+import {
+  JetBrainsMono_400Regular, JetBrainsMono_500Medium,
+} from "@expo-google-fonts/jetbrains-mono";
 
 import { useStore } from "./src/state";
 import { colors } from "./src/theme";
+import { Home, TrendingUp, MessageCircle, User } from "lucide-react-native";
 
 import LoginScreen from "./src/screens/LoginScreen";
 import MapScreen from "./src/screens/MapScreen";
@@ -34,10 +42,6 @@ const navTheme = {
   },
 };
 
-function TabIcon({ color, glyph }) {
-  return <Text style={{ color, fontSize: 20 }}>{glyph}</Text>;
-}
-
 function TabsNav() {
   return (
     <>
@@ -58,7 +62,7 @@ function TabsNav() {
           component={MapScreen}
           options={{
             title: "Главная",
-            tabBarIcon: ({ color }) => <TabIcon color={color} glyph="⌂" />,
+            tabBarIcon: ({ color }) => <Home size={22} color={color} strokeWidth={1.8} />,
           }}
         />
         <Tabs.Screen
@@ -66,7 +70,7 @@ function TabsNav() {
           component={IncomeScreen}
           options={{
             title: "Доходы",
-            tabBarIcon: ({ color }) => <TabIcon color={color} glyph="₽" />,
+            tabBarIcon: ({ color }) => <TrendingUp size={22} color={color} strokeWidth={1.8} />,
           }}
         />
         <Tabs.Screen
@@ -74,7 +78,7 @@ function TabsNav() {
           component={ChatScreen}
           options={{
             title: "Сообщения",
-            tabBarIcon: ({ color }) => <TabIcon color={color} glyph="✉" />,
+            tabBarIcon: ({ color }) => <MessageCircle size={22} color={color} strokeWidth={1.8} />,
           }}
         />
         <Tabs.Screen
@@ -82,7 +86,7 @@ function TabsNav() {
           component={ProfileScreen}
           options={{
             title: "Профиль",
-            tabBarIcon: ({ color }) => <TabIcon color={color} glyph="👤" />,
+            tabBarIcon: ({ color }) => <User size={22} color={color} strokeWidth={1.8} />,
           }}
         />
       </Tabs.Navigator>
@@ -95,11 +99,16 @@ export default function App() {
   const bootstrapped = useStore((s) => s.bootstrapped);
   const token = useStore((s) => s.token);
 
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold,
+    JetBrainsMono_400Regular, JetBrainsMono_500Medium,
+  });
+
   useEffect(() => {
     bootstrap();
   }, [bootstrap]);
 
-  if (!bootstrapped) {
+  if (!bootstrapped || !fontsLoaded) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: "center" }}>
         <ActivityIndicator color={colors.accent} />

@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { T, fonts, radii } from "../theme";
 import { Icon } from "../components/Icon";
 import { useStore } from "../state";
+import { TrendingUp, Car, Clock, Star, MapPin, ArrowRight } from "lucide-react-native";
 
 const SCREEN_W = Dimensions.get("window").width;
 
@@ -54,15 +55,19 @@ export default function IncomeScreen() {
           <Text style={s.heroLabel}>
             ЗАРАБОТАНО {tab === "day" ? "СЕГОДНЯ" : tab === "week" ? "ЗА НЕДЕЛЮ" : "ЗА МЕСЯЦ"}
           </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <TrendingUp size={16} color={T.ok} strokeWidth={2} />
+            <Text style={{ color: T.ok, fontSize: 12, fontWeight: "600" }}>+18% к среднему</Text>
+          </View>
           <Text style={s.heroValue}>{formatMoney(data.earnings)}</Text>
         </View>
 
         {/* KPI grid 2×2 */}
         <View style={s.grid}>
-          <KPI label="Поездок" value={String(data.rides)} />
-          <KPI label="Часов онлайн" value={data.hours.toString()} />
-          <KPI label="Средний рейтинг" value={String(data.rating)} icon="star" />
-          <KPI label="Км пройдено" value={data.km.toLocaleString("ru-RU").replace(",", " ")} />
+          <KPI label="Поездок"         value={String(data.rides)}                              LIcon={Car}       />
+          <KPI label="Часов онлайн"    value={data.hours.toString()}                           LIcon={Clock}     />
+          <KPI label="Средний рейтинг" value={String(data.rating)}                             LIcon={Star}      />
+          <KPI label="Км пройдено"     value={data.km.toLocaleString("ru-RU").replace(",", " ")} LIcon={MapPin}  />
         </View>
 
         {/* Recent rides */}
@@ -79,6 +84,7 @@ export default function IncomeScreen() {
               <Text style={s.rideAddr} numberOfLines={1}>{r.addr}</Text>
             </View>
             <Text style={s.ridePrice}>{formatMoney(r.price)}</Text>
+            <ArrowRight size={14} color={T.mist} strokeWidth={1.5} />
           </View>
         ))}
       </ScrollView>
@@ -86,11 +92,12 @@ export default function IncomeScreen() {
   );
 }
 
-function KPI({ label, value, icon }) {
+function KPI({ label, value, icon, LIcon }) {
   return (
     <View style={s.kpi}>
       <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
-        {icon && <Icon name={icon} size={16} color={T.sun} />}
+        {LIcon && <LIcon size={16} color={T.sun} strokeWidth={1.8} />}
+        {!LIcon && icon && <Icon name={icon} size={16} color={T.sun} />}
         <Text style={s.kpiValue}>{value}</Text>
       </View>
       <Text style={s.kpiLabel}>{label}</Text>

@@ -11,6 +11,7 @@ import { useStore } from "../state";
 import { api } from "../api";
 import { T, fonts, radii } from "../theme";
 import { Icon } from "../components/Icon";
+import { Send } from "lucide-react-native";
 
 function formatTime(ts) {
   if (!ts) return "";
@@ -123,7 +124,7 @@ export default function ChatScreen({ route }) {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView contentContainerStyle={s.thread}>
           {messages.length === 0
@@ -148,7 +149,7 @@ export default function ChatScreen({ route }) {
           >
             {sending
               ? <ActivityIndicator color={T.ink} />
-              : <Icon name="send" size={16} color={T.ink} />}
+              : <Send size={18} color={T.ink} strokeWidth={2} />}
           </Pressable>
         </View>
       </KeyboardAvoidingView>

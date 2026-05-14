@@ -20,7 +20,7 @@ import { T, fonts, radii, shadows } from "../theme";
 const DEFAULT_LAT = 44.6166;
 const DEFAULT_LON = 33.5254;
 const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get("window");
-const SHEET_EXPANDED_H  = SCREEN_H * 0.62;
+const SHEET_EXPANDED_H  = SCREEN_H * 0.55;
 const SHEET_COLLAPSED_H = 96;
 
 const QUICK_PLACES = [
@@ -329,38 +329,21 @@ export default function MainScreen() {
         onCenterChange={handleCenterChange} onReady={handleMapReady}
       />
 
-      {/* Top floating bar (Yandex Go style) */}
-      {tab === "create" && !activeField && (
-        <SafeAreaView edges={["top"]} style={s.topRow} pointerEvents="box-none">
-          <Pressable style={[s.iconChip, shadows.s2]} hitSlop={8}>
-            <Icon name="menu" size={20} color={T.ink} />
-          </Pressable>
-          <Pressable
-            style={[s.searchPill, shadows.s2]}
-            onPress={() => openSearch("dropoff")}
-          >
-            <Icon name="search" size={18} color={T.graphite} />
-            <Text style={s.searchPillText}>Куда едем?</Text>
-          </Pressable>
-          <View style={[s.avatarChip, shadows.s2]}>
-            <Text style={s.avatarText}>АК</Text>
-          </View>
-        </SafeAreaView>
-      )}
 
-      {/* WS status (subtle) */}
-      {tab === "create" && !activeField && wsStatus !== "online" && (
-        <SafeAreaView edges={["top"]} style={s.wsWrap} pointerEvents="none">
-          <View style={s.wsPill}>
-            <View style={[s.wsDot, { backgroundColor: wsStatus === "connecting" ? T.warn : T.bad }]} />
-            <Text style={s.wsText}>{wsStatus === "connecting" ? "соединение…" : "офлайн"}</Text>
-          </View>
-        </SafeAreaView>
-      )}
 
       {/* My-location FAB */}
       {tab === "create" && !activeField && (
-        <Pressable style={[s.locFab, shadows.s2]} onPress={() => {}}>
+        <Pressable
+          style={[s.locFab, shadows.s2]}
+          onPress={async () => {
+            try {
+              const { status } = await Location.requestForegroundPermissionsAsync();
+              if (status !== 'granted') return;
+              const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+              mapRef.current?.setCenter(pos.coords.latitude, pos.coords.longitude, 15);
+            } catch {}
+          }}
+        >
           <Icon name="loc" size={20} color={T.ink} />
         </Pressable>
       )}
@@ -609,8 +592,13 @@ export default function MainScreen() {
           <RideTab order={currentOrder} onRefresh={refreshState} />
         )}
 
-        {!activeField && <NavBar active={tab} onChange={setTab} />}
       </Animated.View>
+
+      {!activeField && (
+        <View style={s.navBarFixed}>
+          <NavBar active={tab} onChange={setTab} />
+        </View>
+      )}
 
       {currentOrder && (
         <OrderModal
@@ -758,6 +746,12 @@ function HistoryTab({ items }) {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: T.mapBg },
+
+  navBarFixed: {
+    position: "absolute",
+    left: 0, right: 0, bottom: 0,
+    zIndex: 20,
+  },
 
   // Top bar (Yandex Go: menu | search-pill | avatar)
   topRow: {

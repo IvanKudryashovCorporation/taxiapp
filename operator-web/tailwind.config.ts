@@ -3,6 +3,7 @@ import type { Config } from "tailwindcss";
 // Tailwind конфиг — токены пробрасываются через CSS variables (см. globals.css),
 // так что менять в одном месте — отражается везде.
 const config: Config = {
+  darkMode: "class",
   content: ["./src/**/*.{ts,tsx,js,jsx,mdx}"],
   theme: {
     extend: {

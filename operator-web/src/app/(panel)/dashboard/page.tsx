@@ -2,7 +2,7 @@
 // 4 metric cards (1-я accent ink), bar chart "Заказы по часам" 24 колонки,
 // "Лента событий" справа (2:1), внизу "Зоны спроса" 5×1.
 "use client";
-import * as React from "react";
+import React, { memo } from "react";
 import PageHeader from "@/components/PageHeader";
 import { cn } from "@/lib/utils.js";
 

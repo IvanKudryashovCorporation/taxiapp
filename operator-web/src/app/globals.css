@@ -61,3 +61,50 @@ body {
 ::-webkit-scrollbar-thumb { background: var(--c-mist); border-radius: 5px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--c-stone); }
 ::-webkit-scrollbar-track { background: transparent; }
+
+/* ─── Dark theme override ─────────────────────────────────────── */
+html.dark {
+  --c-ink:           #F4F1EA;
+  --c-ink2:          #E6E2D8;
+  --c-ink3:          #B8B5AD;
+  --c-graphite:      #8A8780;
+  --c-stone:         #5C5A55;
+  --c-mist:          #2A2A26;
+  --c-sand:          #1A1A17;
+  --c-paper:         #0F121C;
+  --c-paper2:        #0E0E0C;
+  --c-white:         #1A1A17;
+
+  /* Акцент остаётся */
+  --c-sun:           #F2A65A;
+  --c-sun-deep:      #D9823A;
+  --c-sun-soft:      rgba(242, 166, 90, 0.18);
+
+  --c-ok:            #4CAF7D;
+  --c-warn:          #D4B04A;
+  --c-bad:           #C0544A;
+  --c-link:          #6B9FD4;
+
+  --c-map-bg:        #1A1E2E;
+  --c-map-water:     #12161F;
+  --c-map-road:      #2A2A26;
+  --c-map-road-alt:  #1A1A17;
+  --c-map-ink:       #E6E2D8;
+}
+
+html.dark body {
+  background: var(--c-paper);
+  color: var(--c-ink);
+}
+
+html.dark .hairline-b {
+  border-bottom-color: var(--c-sand);
+}
+
+html.dark .hairline-r {
+  border-right-color: var(--c-sand);
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: var(--c-stone);
+}

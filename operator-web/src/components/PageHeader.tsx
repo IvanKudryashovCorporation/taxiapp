@@ -1,8 +1,11 @@
+"use client";
 // PageHeader — эталон operator.jsx → OpHeader.
 // Каждая страница раздела рендерит свой <PageHeader title sub right>.
 // Не sticky (как в эталоне — header внутри main-column).
 import * as React from "react";
 import { Icon } from "./Icon";
+import { useTheme } from "@/lib/theme-provider";
+import { Sun, Moon } from "lucide-react";
 
 export interface PageHeaderProps {
   title: string;
@@ -18,6 +21,7 @@ export function PageHeader({
   right,
   searchPlaceholder = "Поиск по заказам, водителям, телефонам…",
 }: PageHeaderProps) {
+  const { mode, toggle } = useTheme();
   return (
     <header
       className="hairline-b bg-white flex items-center"
@@ -74,6 +78,19 @@ export function PageHeader({
             border: "2px solid var(--c-paper)",
           }}
         />
+      </button>
+
+      {/* Theme switcher */}
+      <button
+        aria-label="Переключить тему"
+        onClick={toggle}
+        className="bg-paper rounded-r2 flex items-center justify-center transition-colors hover:bg-sand"
+        style={{ width: 36, height: 36 }}
+      >
+        {mode === "dark"
+          ? <Sun size={17} className="text-sun" />
+          : <Moon size={17} className="text-ink" />
+        }
       </button>
     </header>
   );

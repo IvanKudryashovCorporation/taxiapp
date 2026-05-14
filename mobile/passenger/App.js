@@ -5,7 +5,15 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { View, ActivityIndicator } from "react-native";
+import { useFonts } from "expo-font";
+import {
+  Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold,
+} from "@expo-google-fonts/inter";
+import {
+  JetBrainsMono_400Regular, JetBrainsMono_500Medium,
+} from "@expo-google-fonts/jetbrains-mono";
 
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { useStore } from "./src/state";
 import { colors } from "./src/theme";
 
@@ -13,8 +21,21 @@ import LoginScreen from "./src/screens/LoginScreen";
 import VerifyScreen from "./src/screens/VerifyScreen";
 import CityScreen from "./src/screens/CityScreen";
 import MainScreen from "./src/screens/MainScreen";
+import OrdersScreen from "./src/screens/OrdersScreen";
+import FavoritesScreen from "./src/screens/FavoritesScreen";
 
 const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
+
+function MainTabs() {
+  return (
+    <Tab.Navigator screenOptions={{ headerShown: false, tabBarStyle: { display: "none" } }}>
+      <Tab.Screen name="create" component={MainScreen} />
+      <Tab.Screen name="ride"   component={OrdersScreen} />
+      <Tab.Screen name="fav"    component={FavoritesScreen} />
+    </Tab.Navigator>
+  );
+}
 
 const navTheme = {
   ...DefaultTheme,
@@ -36,11 +57,16 @@ export default function App() {
   const token = useStore((s) => s.token);
   const cityLat = useStore((s) => s.cityLat);
 
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold,
+    JetBrainsMono_400Regular, JetBrainsMono_500Medium,
+  });
+
   useEffect(() => {
     bootstrap();
   }, [bootstrap]);
 
-  if (!bootstrapped) {
+  if (!bootstrapped || !fontsLoaded) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: "center" }}>
         <ActivityIndicator color={colors.accent} />
@@ -71,7 +97,7 @@ export default function App() {
             ) : !cityLat ? (
               <Stack.Screen name="City" component={CityScreen} />
             ) : (
-              <Stack.Screen name="Main" component={MainScreen} />
+              <Stack.Screen name="Main" component={MainTabs} />
             )}
           </Stack.Navigator>
         </NavigationContainer>

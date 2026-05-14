@@ -32,9 +32,15 @@ export const T = {
 };
 
 export const fonts = {
-  ui:      Platform.select({ ios: "System", android: "sans-serif", default: "System" }),
-  display: Platform.select({ ios: "System", android: "sans-serif-medium", default: "System" }),
-  mono:    Platform.select({ ios: "Menlo", android: "monospace", default: "monospace" }),
+  ui:          "Inter_400Regular",
+  uiMed:       "Inter_500Medium",
+  uiSemi:      "Inter_600SemiBold",
+  display:     "Inter_700Bold",
+  mono:        "JetBrainsMono_500Medium",
+  monoReg:     "JetBrainsMono_400Regular",
+  // Системные fallback (пока шрифты грузятся)
+  uiFallback:  Platform.select({ ios: "System", android: "sans-serif", default: "System" }),
+  monoFallback: Platform.select({ ios: "Menlo", android: "monospace", default: "monospace" }),
 };
 
 export const radii = { r1: 8, r2: 12, r3: 16, r4: 20, r5: 28 };
@@ -87,3 +93,22 @@ export const colors = {
 
 export const radius = { sm: radii.r1, md: radii.r2, lg: radii.r4, xl: radii.r5 };
 export const spacing = (n) => n * 4;
+
+// ─── Light / Dark themes ─────────────────────────────────────────
+export const T_LIGHT = {
+  bg: "#F4F1EA", surface: "#FFFFFF", surface2: "#FBF9F4",
+  border: "#E6E2D8", text: "#0E0E0C", textSub: "#5C5A55",
+  textDim: "#8A8780", textHint: "#B8B5AD",
+  accent: "#F2A65A", accentDeep: "#D9823A", accentSoft: "rgba(242,166,90,0.14)",
+  ok: "#3D8A6A", warn: "#C49A2C", bad: "#B0463A",
+};
+export const T_DARK = {
+  bg: "#0E0E0C", surface: "#1A1A17", surface2: "#2A2A26",
+  border: "#2A2A26", text: "#FBF9F4", textSub: "#B8B5AD",
+  textDim: "#8A8780", textHint: "#5C5A55",
+  accent: "#F2A65A", accentDeep: "#D9823A", accentSoft: "rgba(242,166,90,0.14)",
+  ok: "#3D8A6A", warn: "#C49A2C", bad: "#B0463A",
+};
+export function getTheme(mode = "light") {
+  return mode === "dark" ? T_DARK : T_LIGHT;
+}

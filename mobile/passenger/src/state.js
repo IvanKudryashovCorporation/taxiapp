@@ -22,6 +22,7 @@ export const useStore = create((set, get) => ({
   currentOrder: null,
   history: [],
   lastQuote: null,
+  nearbyDrivers: [],
 
   async bootstrap() {
     const token = await getItem(STORAGE_KEYS.token);
@@ -104,6 +105,19 @@ export const useStore = create((set, get) => ({
     if (!order && prev?.public_id && socket) socket.unsubscribeOrder(prev.public_id);
   },
 
+  setNearbyDrivers(drivers) {
+    set({ nearbyDrivers: drivers });
+  },
+  generateNearbyDrivers(lat, lon) {
+    const drivers = Array.from({ length: 6 }, (_, i) => ({
+      id: `mock-${i}`,
+      lat: lat + (Math.random() - 0.5) * 0.018,
+      lon: lon + (Math.random() - 0.5) * 0.018,
+      heading: Math.random() * 360,
+    }));
+    set({ nearbyDrivers: drivers });
+    return drivers;
+  },
   setLastQuote(q) {
     set({ lastQuote: q });
   },

@@ -30,23 +30,26 @@ function buildHTML(centerLat, centerLon) {
     display: block !important;
   }
   .car-rotate {
-    width: 110px; height: 126px;
-    transform-origin: 55px 63px;
-    transition: transform 0.3s ease-out;
+    width: 66px; height: 76px;
+    transform-origin: 33px 38px;
+    transition: transform 0.4s ease-out;
     display: block !important;
+    filter: drop-shadow(0px 3px 6px rgba(0,0,0,0.55));
   }
-  .car-rotate img { width: 110px; height: 126px; display: block !important; pointer-events: none; }
+  .car-rotate img { width: 66px; height: 76px; display: block !important; pointer-events: none; }
 
   .price-tip {
-    background: rgba(245,207,49,0.95) !important;
+    background: #0E0E0C !important;
     border: none !important;
-    border-radius: 10px !important;
-    color: #1a1a1a !important;
-    font-weight: 800 !important;
-    font-size: 13px !important;
-    padding: 3px 8px !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
+    border-radius: 12px !important;
+    color: #F4F1EA !important;
+    font-weight: 700 !important;
+    font-size: 12px !important;
+    font-family: monospace !important;
+    padding: 4px 10px !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
     white-space: nowrap !important;
+    letter-spacing: 0.3px !important;
   }
   .price-tip::before { display: none !important; }
 <\/style>
@@ -102,14 +105,20 @@ function buildHTML(centerLat, centerLon) {
       var el = carMarker.getElement();
       if (el) {
         var rot = el.querySelector('.car-rotate');
-        if (rot) rot.style.transform = 'rotate(' + deg + 'deg)';
+        if (rot) {
+          var prev = parseFloat(rot.dataset.deg || 0);
+          var diff = ((deg - prev + 540) % 360) - 180;
+          var smooth = prev + diff;
+          rot.dataset.deg = smooth;
+          rot.style.transform = 'rotate(' + smooth + 'deg)';
+        }
       }
     } else {
       var icon = L.divIcon({
         className: 'car-icon-outer',
         html: '<div class="car-rotate" style="transform:rotate(' + deg + 'deg)"><img src="' + CAR_IMG_SRC + '" alt=""/></div>',
-        iconSize:   [110, 126],
-        iconAnchor: [55, 63]
+        iconSize:   [66, 76],
+        iconAnchor: [33, 38]
       });
       carMarker = L.marker([lat, lon], { icon: icon, zIndexOffset: 1000 }).addTo(map);
     }

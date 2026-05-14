@@ -9,10 +9,12 @@ import { T, fonts, radii } from "../theme";
 import { Icon } from "../components/Icon";
 
 const MENU = [
-  { id: "docs",     icon: "shield",   label: "Документы" },
-  { id: "safety",   icon: "warn",     label: "Безопасность" },
-  { id: "support",  icon: "chat",     label: "Поддержка" },
-  { id: "language", icon: "settings", label: "Язык" },
+  { id: "docs",     icon: "shield",   label: "Документы",    onPress: () => Alert.alert("Документы", "Раздел в разработке") },
+  { id: "safety",   icon: "warn",     label: "Безопасность", onPress: () => Alert.alert("Безопасность", "Смена пароля, 2FA, история сессий — в разработке") },
+  { id: "support",  icon: "chat",     label: "Поддержка",    onPress: null },
+  { id: "language", icon: "settings", label: "Язык",         onPress: () => Alert.alert("Язык", "Текущий язык: Русский\nEnglish — в разработке") },
+  { id: "theme",    icon: "moon",     label: "Тема",         onPress: () => Alert.alert("Тема", "Переключатель темы — в разработке") },
+  { id: "about",    icon: "info",     label: "О приложении", onPress: () => Alert.alert("Профсоюз Рассвет", "Версия 1.0.0\nПриложение для водителей") },
 ];
 
 export default function ProfileScreen() {
@@ -78,6 +80,7 @@ export default function ProfileScreen() {
                 i < MENU.length - 1 && s.menuRowSep,
                 pressed && { backgroundColor: T.ink2 },
               ]}
+              onPress={m.onPress}
             >
               <Icon name={m.icon} size={20} color={T.stone} />
               <Text style={s.menuLabel}>{m.label}</Text>

@@ -15,6 +15,13 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "8765", "--directory", ".preview/handoff"],
       "port": 8765
+    },
+    {
+      "name": "operator-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3001,
+      "cwd": "${workspaceRoot}/operator-web"
     }
   ]
 }

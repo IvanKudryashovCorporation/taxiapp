@@ -9,6 +9,7 @@ import {
   Alert,
   ScrollView,
 } from "react-native";
+import { Locate } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useStore } from "../state";
 import { api } from "../api";
@@ -382,7 +383,7 @@ export default function MapScreen() {
       {/* Кнопка «вернуться к себе» */}
       {!followActive && (
         <Pressable style={styles.recenterBtn} onPress={recenter}>
-          <Text style={styles.recenterIcon}>📍</Text>
+          <Locate size={22} color="#F2A65A" strokeWidth={2} />
         </Pressable>
       )}
 
@@ -396,7 +397,7 @@ export default function MapScreen() {
               <>
                 <View style={styles.ordersHeader}>
                   <Text style={styles.ordersHeaderTitle}>
-                    🔔  Новых заказов: {available.length}
+                    Новых заказов: {available.length}
                   </Text>
                 </View>
                 <ScrollView
@@ -409,29 +410,7 @@ export default function MapScreen() {
                   ))}
                 </ScrollView>
               </>
-            ) : (
-              /* Иначе — стандартная строка статистики */
-              <View style={styles.statsRow}>
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>
-                    {profile?.rating != null ? String(profile.rating) : "—"}
-                  </Text>
-                  <Text style={styles.statLabel}>Рейтинг</Text>
-                </View>
-                <View style={styles.statSep} />
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>0</Text>
-                  <Text style={styles.statLabel}>Заказов</Text>
-                </View>
-                <View style={styles.statSep} />
-                <View style={styles.statItem}>
-                  <View style={styles.onlineBadge}>
-                    <View style={styles.onlineDot} />
-                    <Text style={styles.onlineBadgeText}>На линии</Text>
-                  </View>
-                </View>
-              </View>
-            )}
+            ) : null}
           </View>
         </SafeAreaView>
       )}
@@ -479,8 +458,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.4, shadowRadius: 8, elevation: 8,
   },
-  recenterIcon: { fontSize: 22 },
-
   // Bottom overlay
   bottomOverlayWrap: {
     position: "absolute",
@@ -575,21 +552,6 @@ const styles = StyleSheet.create({
     backgroundColor: D.success, marginRight: 6,
   },
   onlineBadgeText: { color: D.success, fontSize: 12, fontWeight: "700" },
-
-  // Stats
-  statsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-around",
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-  },
-  statItem: { alignItems: "center", flex: 1 },
-  statValue: {
-    color: D.text, fontSize: 18, fontWeight: "800", marginBottom: 2,
-  },
-  statLabel: { color: D.muted, fontSize: 11, fontWeight: "500" },
-  statSep: { width: 1, height: 32, backgroundColor: D.border },
 
   // Order sheet (full detail)
   sheetContainer: {
