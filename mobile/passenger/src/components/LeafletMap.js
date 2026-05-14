@@ -11,8 +11,8 @@ function buildHTML(centerLat, centerLon) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
   html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #F0EDE8; }
-  .gm-style-cc, .gmnoprint { display: none !important; }
-  .gm-style a[href*="maps.google"],[href*="google.com/maps"] { display: none !important; }
+  .gm-style-cc { display: none !important; }
+  .gmnoprint:not(.gm-bundled-control) { display: none !important; }
 </style>
 </head>
 <body>
@@ -177,9 +177,11 @@ const LeafletMap = forwardRef(function LeafletMap(
     <View style={[styles.root, style]}>
       <WebView
         ref={webviewRef}
-        source={{ html: buildHTML(centerLat, centerLon) }}
+        source={{ html: buildHTML(centerLat, centerLon), baseUrl: 'https://localhost' }}
         style={styles.webview}
         scrollEnabled={false}
+        allowFileAccessFromFileURLs={false}
+        mixedContentMode="always"
         onMessage={(e) => {
           try {
             const data = JSON.parse(e.nativeEvent.data);
