@@ -18,8 +18,8 @@
     },
     {
       "name": "operator-web",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["next", "dev", "-p", "3001"],
       "port": 3001,
       "cwd": "${workspaceRoot}/operator-web"
     }

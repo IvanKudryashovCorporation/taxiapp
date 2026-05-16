@@ -11,9 +11,9 @@ export const T = {
   graphite:   "#5C5A55",
   stone:      "#8A8780",
   mist:       "#B8B5AD",
-  sand:       "#E6E2D8",
-  paper:      "#F4F1EA",
-  paper2:     "#FBF9F4",
+  sand:       "#E8E8EA",
+  paper:      "#FFFFFF",
+  paper2:     "#F8F8F8",
   white:      "#FFFFFF",
 
   // Accent — sunrise
@@ -28,10 +28,10 @@ export const T = {
   link:       "#3F6BB0",
 
   // Map (paper-like)
-  mapBg:      "#EFEBE2",
+  mapBg:      "#F2F2F4",
   mapWater:   "#D9DCE0",
   mapRoad:    "#FFFFFF",
-  mapRoadAlt: "#E8E4DA",
+  mapRoadAlt: "#E4E4E8",
   mapInk:     "#1A1A17",
 };
 
@@ -108,17 +108,17 @@ export const spacing = (n) => n * 4;
 // ─── Light / Dark themes ─────────────────────────────────────────
 export const T_LIGHT = {
   // Semantic aliases
-  bg: "#F4F1EA", surface: "#FFFFFF", surface2: "#FBF9F4",
-  border: "#E6E2D8", text: "#0E0E0C", textSub: "#5C5A55",
+  bg: "#FFFFFF", surface: "#FFFFFF", surface2: "#F8F8F8",
+  border: "#E8E8EA", text: "#0E0E0C", textSub: "#5C5A55",
   textDim: "#8A8780", textHint: "#B8B5AD",
   accent: "#F2A65A", accentDeep: "#D9823A", accentSoft: "rgba(242,166,90,0.14)",
   ok: "#3D8A6A", warn: "#C49A2C", bad: "#B0463A",
   // Palette tokens (mirrored from T)
-  paper: "#F4F1EA", paper2: "#FBF9F4",
+  paper: "#FFFFFF", paper2: "#F8F8F8",
   ink: "#0E0E0C", graphite: "#5C5A55", stone: "#8A8780",
-  mist: "#B8B5AD", sand: "#E6E2D8", white: "#FFFFFF",
+  mist: "#B8B5AD", sand: "#E8E8EA", white: "#FFFFFF",
   sun: "#F2A65A", sunDeep: "#D9823A", sunSoft: "rgba(242,166,90,0.14)",
-  link: "#3F6BB0", mapBg: "#EFEBE2",
+  link: "#3F6BB0", mapBg: "#F2F2F4",
 };
 export const T_DARK = {
   // Semantic aliases

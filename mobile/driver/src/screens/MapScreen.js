@@ -286,14 +286,14 @@ export default function MapScreen() {
     followMode.current = true;
     setFollowActive(true);
     const loc = useStore.getState().location;
-    if (loc) mapRef.current?.setCenter(loc.lat, loc.lon, 14);
+    if (loc) mapRef.current?.setCenter(loc.lat, loc.lon, 18);
   }, []);
 
   // После загрузки карты — разово поставить позицию
   const handleMapReady = useCallback(() => {
     const loc = useStore.getState().location;
     if (loc) {
-      mapRef.current?.setCenter(loc.lat, loc.lon, 14);
+      mapRef.current?.setCenter(loc.lat, loc.lon, 16);
       mapRef.current?.setCar(loc.lat, loc.lon, loc.heading ?? null);
       hasInitialCenter.current = true;
     }
@@ -303,7 +303,7 @@ export default function MapScreen() {
   useEffect(() => {
     if (!location?.lat) return;
     if (!hasInitialCenter.current) {
-      mapRef.current?.setCenter(location.lat, location.lon, 14);
+      mapRef.current?.setCenter(location.lat, location.lon, 16);
       hasInitialCenter.current = true;
     } else if (followMode.current) {
       // panTo сохраняет текущий зум пользователя

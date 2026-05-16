@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { View, Text, FlatList, StyleSheet, Pressable, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Heart, Home, Briefcase, MapPin, Plus, ChevronRight } from "lucide-react-native";
-import { T, radii } from "../theme";
+import { radii } from "../theme";
+import { useT } from "../hooks/useT";
 import NavBar from "../components/NavBar";
 
 const DEFAULT_FAVS = [
@@ -11,6 +12,8 @@ const DEFAULT_FAVS = [
 ];
 
 function FavRow({ item }) {
+  const T = useT();
+  const s = useMemo(() => makeRowStyles(T), [T]);
   const Ico = item.type === "home" ? Home : item.type === "work" ? Briefcase : MapPin;
   const hasAddr = !!item.addr;
   return (
@@ -34,6 +37,9 @@ function FavRow({ item }) {
 
 export default function FavoritesScreen() {
   const [favs] = useState(DEFAULT_FAVS);
+  const T = useT();
+  const s = useMemo(() => makeScreenStyles(T), [T]);
+
   return (
     <SafeAreaView style={s.root} edges={["top"]}>
       <View style={s.header}>
@@ -51,7 +57,7 @@ export default function FavoritesScreen() {
             style={({ pressed }) => [s.addRow, pressed && { opacity: 0.7 }]}
             onPress={() => Alert.alert("Добавить адрес", "В разработке")}
           >
-            <View style={[s.rowIcon, s.rowIconActive]}>
+            <View style={[s.addIcon, s.addIconActive]}>
               <Plus size={18} color={T.sun} strokeWidth={2} />
             </View>
             <Text style={s.addText}>Добавить место</Text>
@@ -64,23 +70,32 @@ export default function FavoritesScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: T.paper },
-  header: {
-    flexDirection: "row", alignItems: "center", gap: 10,
-    paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12,
-    borderBottomWidth: 1, borderBottomColor: T.sand, backgroundColor: T.white,
-  },
-  title:       { fontSize: 20, fontWeight: "700", color: T.ink },
-  list:        { paddingBottom: 32 },
-  row:         { flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingVertical: 14, gap: 14, backgroundColor: T.white },
-  rowIcon:     { width: 40, height: 40, borderRadius: 20, backgroundColor: T.paper, alignItems: "center", justifyContent: "center" },
-  rowIconActive: { backgroundColor: "rgba(242,166,90,0.14)" },
-  rowBody:     { flex: 1 },
-  rowLabel:    { fontSize: 14, fontWeight: "600", color: T.ink, marginBottom: 2 },
-  rowAddr:     { fontSize: 12, color: T.graphite },
-  rowAddrHint: { color: T.mist, fontStyle: "italic" },
-  sep:         { height: 1, backgroundColor: T.paper, marginLeft: 74 },
-  addRow:      { flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingVertical: 14, gap: 14, backgroundColor: T.white },
-  addText:     { fontSize: 14, fontWeight: "500", color: T.sun },
-});
+function makeRowStyles(T) {
+  return StyleSheet.create({
+    row:          { flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingVertical: 14, gap: 14, backgroundColor: T.white },
+    rowIcon:      { width: 40, height: 40, borderRadius: 20, backgroundColor: T.paper, alignItems: "center", justifyContent: "center" },
+    rowIconActive:{ backgroundColor: "rgba(242,166,90,0.14)" },
+    rowBody:      { flex: 1 },
+    rowLabel:     { fontSize: 14, fontWeight: "600", color: T.ink, marginBottom: 2 },
+    rowAddr:      { fontSize: 12, color: T.graphite },
+    rowAddrHint:  { color: T.mist, fontStyle: "italic" },
+  });
+}
+
+function makeScreenStyles(T) {
+  return StyleSheet.create({
+    root:         { flex: 1, backgroundColor: T.paper },
+    header:       {
+      flexDirection: "row", alignItems: "center", gap: 10,
+      paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12,
+      borderBottomWidth: 1, borderBottomColor: T.sand, backgroundColor: T.white,
+    },
+    title:        { fontSize: 20, fontWeight: "700", color: T.ink },
+    list:         { paddingBottom: 32 },
+    sep:          { height: 1, backgroundColor: T.paper, marginLeft: 74 },
+    addRow:       { flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingVertical: 14, gap: 14, backgroundColor: T.white },
+    addIcon:      { width: 40, height: 40, borderRadius: 20, backgroundColor: T.paper, alignItems: "center", justifyContent: "center" },
+    addIconActive:{ backgroundColor: "rgba(242,166,90,0.14)" },
+    addText:      { fontSize: 14, fontWeight: "500", color: T.sun },
+  });
+}

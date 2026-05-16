@@ -1,18 +1,26 @@
+// LeafletMap (passenger) — Google Maps в WebView со светлой темой.
+// Стили из shared/map/style.js (единый источник правды для driver/passenger/operator-web).
 import React, { useRef, useImperativeHandle, forwardRef } from "react";
 import { View, StyleSheet } from "react-native";
 import { WebView } from "react-native-webview";
 
+import { LIGHT_STYLE, THEME_BG, DEFAULT_GMAPS_KEY } from "../../../../shared/map/style.js";
+
 function buildHTML(centerLat, centerLon) {
-  const GMAPS_KEY = "AIzaSyCxJVSEVOuJWMkVtuHsDDfFWdLbH0nvXUo";
+  const styleJson = JSON.stringify(LIGHT_STYLE);
+  const bg = THEME_BG.light;
+  const apiKey = DEFAULT_GMAPS_KEY;
 
   return `<!DOCTYPE html>
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
-  html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #F0EDE8; }
+  html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: ${bg}; }
   .gm-style-cc { display: none !important; }
   .gmnoprint:not(.gm-bundled-control) { display: none !important; }
+  .gm-style a[href^="https://maps.google.com"],
+  .gm-style a[href^="https://www.google.com/maps"] { display: none !important; }
 </style>
 </head>
 <body>
@@ -24,29 +32,12 @@ function buildHTML(centerLat, centerLon) {
   var mapReady = false;
   var pendingCmds = [];
 
-  var LIGHT_STYLE = [
-    { featureType: "poi",      stylers: [{ visibility: "off" }] },
-    { featureType: "transit",  stylers: [{ visibility: "off" }] },
-    { featureType: "administrative", elementType: "geometry", stylers: [{ visibility: "off" }] },
-    { featureType: "road",     elementType: "labels.icon",    stylers: [{ visibility: "off" }] },
-    { elementType: "geometry", stylers: [{ color: "#F0EDE8" }] },
-    { featureType: "road",     elementType: "geometry.fill",  stylers: [{ color: "#FFFFFF" }] },
-    { featureType: "road",     elementType: "geometry.stroke",stylers: [{ color: "#E0DDD5" }] },
-    { featureType: "road.arterial",  elementType: "labels.text.fill", stylers: [{ color: "#5C5A55" }] },
-    { featureType: "road.local",     elementType: "labels.text.fill", stylers: [{ color: "#8A8780" }] },
-    { featureType: "road.highway",   elementType: "geometry",         stylers: [{ color: "#F5F3EE" }] },
-    { featureType: "water",          elementType: "geometry",         stylers: [{ color: "#C8D8DC" }] },
-    { featureType: "landscape",      elementType: "geometry",         stylers: [{ color: "#EDE9E0" }] },
-    { featureType: "building",       elementType: "geometry.fill",    stylers: [{ color: "#E3DED5" }] },
-    { featureType: "building",       elementType: "geometry.stroke",  stylers: [{ color: "#D5D0C7" }] },
-  ];
-
   function initMap() {
     map = new google.maps.Map(document.getElementById('map'), {
       center: { lat: ${centerLat}, lng: ${centerLon} },
-      zoom: 15,
+      zoom: 16,
       disableDefaultUI: true,
-      styles: LIGHT_STYLE,
+      styles: ${styleJson},
       gestureHandling: 'greedy',
       clickableIcons: false,
     });
@@ -97,7 +88,7 @@ function buildHTML(centerLat, centerLon) {
     mapMarkers.forEach(function(m) { m.setMap(null); });
     mapMarkers = [];
     list.forEach(function(m) {
-      var isA   = m.label === 'А' || m.label === 'A';
+      var isA = m.label === 'А' || m.label === 'A';
       var color = m.color || (isA ? '#F2A65A' : '#0E0E0C');
       var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">' +
         '<circle cx="16" cy="16" r="13" fill="' + color + '" stroke="#FFFFFF" stroke-width="3"/>' +
@@ -138,9 +129,9 @@ function buildHTML(centerLat, centerLon) {
     } catch(err) {}
   }
 <\/script>
-<script async src="https://maps.googleapis.com/maps/api/js?key=${GMAPS_KEY}&language=ru&region=RU&callback=initMap"><\/script>
-<\/body>
-<\/html>`;
+<script async src="https://maps.googleapis.com/maps/api/js?key=${apiKey}&language=ru&region=RU&callback=initMap"><\/script>
+</body>
+</html>`;
 }
 
 const LeafletMap = forwardRef(function LeafletMap(
@@ -156,7 +147,7 @@ const LeafletMap = forwardRef(function LeafletMap(
   }
 
   useImperativeHandle(ref, () => ({
-    setCenter(lat, lon, zoom = 15) {
+    setCenter(lat, lon, zoom = 16) {
       send({ cmd: "setView", lat, lon, zoom });
     },
     setUserLocation(lat, lon) {
@@ -200,5 +191,5 @@ export default LeafletMap;
 
 const styles = StyleSheet.create({
   root:    { flex: 1, overflow: "hidden" },
-  webview: { flex: 1, backgroundColor: "#F0EDE8" },
+  webview: { flex: 1, backgroundColor: THEME_BG.light },
 });

@@ -6,17 +6,75 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## PROJECT OVERVIEW
 
-**Профсоюз Рассвет** — мобильное такси-приложение с 2 Expo (React Native) приложениями и Python FastAPI бэкенд.
+**Профсоюз Рассвет** — мобильное такси-приложение с 2 Expo (React Native) приложениями, Next.js operator-web и Python FastAPI бэкенд.
 
 ```
 taxiapp/
 ├── mobile/
 │   ├── passenger/      — приложение для пассажиров (светлая тема, Yandex Go стиль)
 │   └── driver/         — приложение для водителей (тёмная тема, с картой)
+├── operator-web/       — Next.js 14 (TypeScript + Tailwind) панель оператора
+├── shared/             — общий код для всех 3 приложений
+│   └── map/            — ⭐ SINGLE SOURCE OF TRUTH для стилей карты (см. ниже)
 └── backend/            — FastAPI + PostgreSQL (не изменяется)
 ```
 
-**Приложения независимые** — каждое имеет свой App.js и config.
+---
+
+## 🗺️ MAP ARCHITECTURE — единая карта в 3 приложениях
+
+**Все стили карты определены в одном месте**: `shared/map/style.js`. Правка там автоматически применяется к driver, passenger и operator-web.
+
+### Структура
+
+```
+shared/map/
+├── style.js          ← LIGHT_STYLE, DARK_STYLE, THEME_BG, DEFAULT_GMAPS_KEY
+├── buildHTML.js      ← buildHTML({ theme, apiKey, ... }) → HTML для WebView
+└── README.md         ← правь стили ТОЛЬКО здесь!
+```
+
+### Кто что использует
+
+| Файл | Импортирует | Назначение |
+|------|-------------|------------|
+| `mobile/driver/src/components/LeafletMap.js` | `DARK_STYLE`, `THEME_BG`, `DEFAULT_GMAPS_KEY` | Google Maps в WebView + CarOverlay |
+| `mobile/passenger/src/components/LeafletMap.js` | `LIGHT_STYLE`, `THEME_BG`, `DEFAULT_GMAPS_KEY` | Google Maps в WebView + user dot/route |
+| `operator-web/src/components/AppMap.tsx` | `LIGHT_STYLE`, `DARK_STYLE`, ... | Google Maps в `<div>` через JS API |
+| `operator-web/src/app/(panel)/map/page.tsx` | использует `<AppMap />` | Главная карта оператора |
+| `operator-web/src/app/mappreview/page.tsx` | использует `<AppMap />` | Тестовый стенд для итерации стилей |
+
+### Само-тестирование стилей через Chrome preview
+
+`http://localhost:3001/mappreview` — отдельная страница со ВСЕМИ сценариями (light/dark бок-о-бок, разные локации/зумы). Используется через preview MCP:
+
+```
+preview_start name="operator-web"          # запуск Next.js dev
+preview_eval "window.location.assign('http://localhost:3001/mappreview')"
+preview_screenshot                         # смотрим результат
+# правим shared/map/style.js
+preview_eval "location.reload()"
+preview_screenshot                         # сравниваем
+```
+
+### ⚠️ Важно: ограничения Google Maps Styling API
+
+1. **`building` — НЕ валидный featureType!** Здания стилизуются через `landscape.man_made`. Это критический gotcha — стиль `building` тихо игнорируется, и здания не рендерятся.
+2. `weight` в `stylers` — **только integer** (1, 2, 3, 4). Float (1.5) тихо ломает весь стиль → карта серая.
+3. Размер шрифта подписей **нельзя** изменить через стили (Google контролирует по zoom).
+4. Номера домов появляются на zoom 17+, только там где Google имеет данные. В Крыму данные обычно отсутствуют.
+
+### Metro watchFolders (для mobile)
+
+`mobile/driver/metro.config.js` и `mobile/passenger/metro.config.js` настроены с `watchFolders = [shared/]` чтобы Metro подхватывал импорты из `../../shared/map/style.js`.
+
+### Next.js externalDir (для operator-web)
+
+`operator-web/next.config.mjs` имеет `experimental.externalDir: true` чтобы Webpack принимал импорты из `../shared/`.
+
+---
+
+**Приложения независимые** — каждое имеет свой App.js и config (кроме общего map-модуля).
 
 ---
 

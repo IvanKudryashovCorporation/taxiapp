@@ -15,7 +15,8 @@ import NavBar from "../components/NavBar";
 import ChatBubble from "../components/ChatBubble";
 import OrderModal from "../components/OrderModal";
 import { Icon } from "../components/Icon";
-import { T, fonts, radii, shadows } from "../theme";
+import { fonts, radii, shadows } from "../theme";
+import { useT } from "../hooks/useT";
 
 const DEFAULT_LAT = 44.6166;
 const DEFAULT_LON = 33.5254;
@@ -48,6 +49,8 @@ function humanStatus(s) {
 }
 
 function PickupPin({ loading }) {
+  const T   = useT();
+  const pin = useMemo(() => makePinStyles(T), [T]);
   return (
     <View style={pin.wrap}>
       <View style={pin.box}>
@@ -60,19 +63,24 @@ function PickupPin({ loading }) {
     </View>
   );
 }
-const pin = StyleSheet.create({
-  wrap: { alignItems: "center" },
-  box: {
-    width: 28, height: 28, backgroundColor: T.sun, borderRadius: 14,
-    alignItems: "center", justifyContent: "center",
-    borderWidth: 3, borderColor: T.white,
-    ...shadows.s2,
-  },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: T.white },
-  stem: { width: 2, height: 14, backgroundColor: T.ink, marginTop: 2, borderRadius: 1 },
-});
+function makePinStyles(T) {
+  return StyleSheet.create({
+    wrap: { alignItems: "center" },
+    box: {
+      width: 28, height: 28, backgroundColor: T.sun, borderRadius: 14,
+      alignItems: "center", justifyContent: "center",
+      borderWidth: 3, borderColor: T.white,
+      ...shadows.s2,
+    },
+    dot:  { width: 8, height: 8, borderRadius: 4, backgroundColor: T.white },
+    stem: { width: 2, height: 14, backgroundColor: T.ink, marginTop: 2, borderRadius: 1 },
+  });
+}
 
 export default function MainScreen() {
+  const T = useT();
+  const s = useMemo(() => makeMainStyles(T), [T]);
+
   const cityLat  = useStore((s) => s.cityLat);
   const cityLon  = useStore((s) => s.cityLon);
   const cityName = useStore((s) => s.cityName);
@@ -160,7 +168,7 @@ export default function MainScreen() {
   const [status,    setStatus]    = useState("");
 
   const handleMapReady = useCallback(() => {
-    if (cityLat) mapRef.current?.setCenter(cityLat, cityLon, 13);
+    if (cityLat) mapRef.current?.setCenter(cityLat, cityLon, 14);
   }, [cityLat, cityLon]);
 
   useEffect(() => {
@@ -174,7 +182,7 @@ export default function MainScreen() {
         const last = await Location.getLastKnownPositionAsync();
         if (last && !cancelled) {
           const { latitude: lat, longitude: lon } = last.coords;
-          mapRef.current?.setCenter(lat, lon, 15);
+          mapRef.current?.setCenter(lat, lon, 16);
           mapRef.current?.setUserLocation(lat, lon);
           hasInitialCenter = true;
         }
@@ -184,7 +192,7 @@ export default function MainScreen() {
             if (cancelled) return;
             const { latitude: lat, longitude: lon } = pos.coords;
             mapRef.current?.setUserLocation(lat, lon);
-            if (!hasInitialCenter) { hasInitialCenter = true; mapRef.current?.setCenter(lat, lon, 15); }
+            if (!hasInitialCenter) { hasInitialCenter = true; mapRef.current?.setCenter(lat, lon, 16); }
           }
         );
       } catch (e) { console.warn("GPS:", e?.message); }
@@ -334,7 +342,7 @@ export default function MainScreen() {
               const { status } = await Location.requestForegroundPermissionsAsync();
               if (status !== 'granted') return;
               const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-              mapRef.current?.setCenter(pos.coords.latitude, pos.coords.longitude, 15);
+              mapRef.current?.setCenter(pos.coords.latitude, pos.coords.longitude, 18);
             } catch {}
           }}
         >
@@ -733,7 +741,8 @@ function HistoryTab({ items }) {
   );
 }
 
-const s = StyleSheet.create({
+function makeMainStyles(T) {
+  return StyleSheet.create({
   root: { flex: 1, backgroundColor: T.mapBg },
 
   navBarFixed: {
@@ -976,4 +985,5 @@ const s = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
   },
   starBtnActive: { backgroundColor: T.sunSoft, borderColor: T.sun },
-});
+  });
+}

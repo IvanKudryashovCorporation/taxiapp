@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { Home, List, Heart, User } from "lucide-react-native";
-import { T } from "../theme";
+import { useT } from "../hooks/useT";
 
 const TABS = [
   { id: "create",  label: "Главная",   LIcon: Home  },
@@ -13,8 +13,11 @@ const TABS = [
 ];
 
 export default function NavBar({ active }) {
-  const insets = useSafeAreaInsets();
+  const insets     = useSafeAreaInsets();
   const navigation = useNavigation();
+  const T          = useT();
+  const s          = useMemo(() => makeStyles(T), [T]);
+
   return (
     <View style={[s.root, { paddingBottom: insets.bottom + 4 }]}>
       {TABS.map((t) => {
@@ -30,9 +33,11 @@ export default function NavBar({ active }) {
   );
 }
 
-const s = StyleSheet.create({
-  root:        { flexDirection: "row", borderTopWidth: 1, borderTopColor: T.sand, backgroundColor: T.white, paddingTop: 8 },
-  item:        { flex: 1, alignItems: "center", gap: 3 },
-  label:       { fontSize: 10, fontWeight: "500", color: T.stone },
-  labelActive: { color: T.sun, fontWeight: "700" },
-});
+function makeStyles(T) {
+  return StyleSheet.create({
+    root:        { flexDirection: "row", borderTopWidth: 1, borderTopColor: T.sand, backgroundColor: T.white, paddingTop: 8 },
+    item:        { flex: 1, alignItems: "center", gap: 3 },
+    label:       { fontSize: 10, fontWeight: "500", color: T.stone },
+    labelActive: { color: T.sun, fontWeight: "700" },
+  });
+}

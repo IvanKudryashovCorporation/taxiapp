@@ -24,4 +24,4 @@ export const PAYMENT_METHODS = [
   { id: "sbp", label: "СБП" },
 ];
 
-export const GOOGLE_MAPS_KEY = "AIzaSyCxJVSEVOuJWMkVtuHsDDfFWdLbH0nvXUo";
+export const GOOGLE_MAPS_KEY = "AIzaSyDqYBqKXaPdabWR5Ls4EaVRhV6f12DFRtA";
