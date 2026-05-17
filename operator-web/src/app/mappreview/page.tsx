@@ -29,13 +29,12 @@ export default function MapFullPreviewPage() {
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: `
-        html, body { margin: 0; padding: 0; height: 100vh; overflow: hidden; background: #0E0E0C; font-family: system-ui, sans-serif; }
+        html, body { margin: 0; padding: 0; min-height: 720px; min-width: 1280px; overflow: hidden; background: #0E0E0C; font-family: system-ui, sans-serif; }
         .gm-style-cc { display: none !important; }
         .gmnoprint:not(.gm-bundled-control) { display: none !important; }
-        .gm-style a[href^="https://maps.google.com"],
-        .gm-style a[href^="https://www.google.com/maps"] { display: none !important; }
+        .mapboxgl-ctrl-attrib, .mapboxgl-ctrl-logo { display: none !important; }
       ` }} />
-      <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+      <div style={{ height: 720, width: 1280, display: "flex", flexDirection: "column" }}>
         {/* Тулбар */}
         <div style={{
           flex: "0 0 auto",
@@ -72,7 +71,7 @@ export default function MapFullPreviewPage() {
         </div>
 
         {/* Карты бок-о-бок */}
-        <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "#2a2a26" }}>
+        <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "1fr", gap: 1, background: "#2a2a26", minHeight: 0 }}>
           <div style={{ position: "relative", background: "#F2F3F5" }}>
             <div style={{
               position: "absolute", top: 10, left: 10, zIndex: 10,

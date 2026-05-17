@@ -39,3 +39,5 @@ backend/data/
 driver_app/data/*.json
 driver_app/data/*.sqlite3
 passenger_app/data/*.json
+.preview/
+mobile/*/src/mapboxToken.local.js
